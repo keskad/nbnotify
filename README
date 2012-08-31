@@ -1,0 +1,8 @@
+dpnotify
+========
+
+Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear
+
+Changelog:
+31.08.2012 (v.0.1) <webnull.www@gmail.com>:
+    + Added default configuration variable [global]->checktime = 60 (update interval in seconds)

@@ -105,7 +105,7 @@ class DobreprogramyNotify:
 
         if not os.path.isfile(configPath):
             w = open(configPath, "w")
-            w.write("[connection]\ntimeout = 60\n")
+            w.write("[connection]\ntimeout = 60\n\n[global]\nchecktime = 60")
             w.close()
 
         if os.path.isfile(configPath):
