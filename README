@@ -4,5 +4,10 @@ dpnotify
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear
 
 Changelog:
+05.09.2012 (v.0.2) <webnull.www@gmail.com>:
+    * Renamed project from "dpnotify" to "nbnotify" ("Nice Blog Notifications")
+    + Moved code to library
+    * Data sent to shell is now escaped (possible security violation)
+
 31.08.2012 (v.0.1) <webnull.www@gmail.com>:
     + Added default configuration variable [global]->checktime = 60 (update interval in seconds)

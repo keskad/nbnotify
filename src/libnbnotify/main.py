@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-import os, hashlib, re, BeautifulSoup, sys, subprocess, sqlite3, getopt, time
+import os, hashlib, re, BeautifulSoup, sys, subprocess, time
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -9,55 +9,8 @@ else:
     import ConfigParser as configparser
     import httplib
 
-class MySum:
-    def __init__(self):
-        self.count = 0
 
-    def step(self, value):
-        self.count += value
-
-    def finalize(self):
-        return self.count
-
-class Database:
-    socket = None
-    cursor = None
-    dbPath = os.path.expanduser("~/.dpnotify/db_cache.sqlite3")
-
-    def dict_factory(self, cursor, row):
-        d = {}
-        for idx, col in enumerate(cursor.description):
-            d[col[0]] = row[idx]
-        return d
-
-    def __init__(self):
-        newDB = False
-
-        if not os.path.isfile(self.dbPath):
-            newDB = True
-
-        self.socket = sqlite3.connect(self.dbPath, check_same_thread = False)
-        self.socket.create_aggregate("mysum", 1, MySum)
-        self.socket.isolation_level = None
-        self.socket.row_factory = self.dict_factory
-        self.socket.text_factory = str
-        self.cursor = self.socket.cursor()
-
-        if newDB == True:
-            self.createEmptyDB()
-
-    def query(self, query):
-        return self.cursor.execute(query)
-
-    def createEmptyDB(self):
-        print("Creating new database...")
-        self.cursor.execute("CREATE TABLE `comments` (comment_id varchar(80) primary key, page_id int(20), content text, username varchar(64), avatar varchar(128));")
-        self.socket.commit()
-
-
-
-
-class DobreprogramyNotify:
+class nbnotify:
     Config = dict()
     #Config['connection'] = dict()
     #Config['connection']['timeout'] = 5 # 5 seconds
@@ -65,6 +18,9 @@ class DobreprogramyNotify:
     configDir = os.path.expanduser("~/.dpnotify")
     db = None
     pages = dict()
+
+    def shellquote(self, s):
+        return "'" + s.replace("'", "'\\''") + "'"
 
     def configSetKey(self, Section, Option, Value):
         if not Section in self.Config:
@@ -200,7 +156,7 @@ class DobreprogramyNotify:
 
 
     def notifyNew(self, pageID, id):
-        os.system('/usr/bin/notify-send "<b>'+self.pages[pageID]['comments'][id]['username']+'</b> skomentował wpis '+self.pages[pageID]['title'].replace("!", ".")+':" \"'+self.pages[pageID]['comments'][id]['content'].replace("!", ".")+'\" -i '+self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
+        os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
 
 
@@ -338,121 +294,3 @@ class DobreprogramyNotify:
                 self.checkPage(pageID)
 
             time.sleep(t)
-
-    def usage(self):
-        print("dpnotify -[short GNU option] [value] --[long GNU option]=[value]")
-        print("\nUsage:\n")
-        print("--help, -h (this message)")
-        print("--add, -a (add link to database)")
-        print("--remove, -r (remove link from database)")
-        print("--list, -l (list all links)")
-        print("--daemonize, (fork to background and run as userspace daemon)")
-
-    def daemonize (self, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
-        '''This forks the current process into a daemon.
-        The stdin, stdout, and stderr arguments are file names that
-        will be opened and be used to replace the standard file descriptors
-        in sys.stdin, sys.stdout, and sys.stderr.
-        These arguments are optional and default to /dev/null.
-        Note that stderr is opened unbuffered, so
-        if it shares a file with stdout then interleaved output
-        may not appear in the order that you expect.
-        '''
-
-        # Do first fork.
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)   # Exit first parent.
-        except OSError as e:
-            sys.stderr.write ("fork #1 failed: (%d) %s\n" % (e.errno, e.strerror) )
-            sys.exit(1)
-
-        # Decouple from parent environment.
-        os.chdir("/")
-        os.umask(0)
-        os.setsid()
-
-        # Do second fork.
-        try:
-            pid = os.fork()
-            if pid > 0:
-                sys.exit(0)   # Exit second parent.
-        except OSError as e:
-            sys.stderr.write ("fork #2 failed: (%d) %s\n" % (e.errno, e.strerror) )
-            sys.exit(1)
-
-        # Redirect standard file descriptors.
-        si = open(stdin, 'r')
-        so = open(stdout, 'a+')
-        se = open(stderr, 'a+', 0)
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
-
-    def getopt(self):
-        if not os.path.isdir(self.iconCacheDir):
-            os.system("mkdir -p "+self.iconCacheDir)
-
-        self.db = Database()
-        self.loadConfig()
-
-        try:
-            opts, args = getopt.getopt(sys.argv[1:], "ha:r:l", ["help", "add=", "remove=", 'list', 'daemon'])
-        except getopt.GetoptError as err:
-            print("Error: "+str(err)+", Try --help for usage\n\n")
-            self.usage()
-            sys.exit(2)
-
-        for o, a in opts:
-            if o in ('-h', '--help'):
-                 self.usage()
-                 sys.exit(2)
-
-            if o in ('-a', '--add'):
-                self.configSetKey('links', hashlib.md5(a).hexdigest(), a)
-                self.saveConfiguration()
-                sys.exit(0)
-
-            if o in ('-l', '--list'):
-                links = self.configGetSection('links')
-
-                if links == False:
-                    print("No links in database.")
-                    sys.exit(0)
-
-                for link in links:
-                    print(links[link])
-
-                sys.exit(0)
-
-            if o in ('-r', '--remove'):
-                links = self.configGetSection('links')
-
-                if links == False:
-                    print("No links in database.")
-                    sys.exit(0)
-
-                pos = None
-
-                for link in links:
-                    if links[link] == a:
-                        pos = link
-                        break
-
-                if pos is not None:
-                    links.pop(pos)
-                    print("Removed.")
-                    self.saveConfiguration()
-                else:
-                    print("Link not found, nothing changed.")
-
-                sys.exit(0)
-
-            if o in '--daemon':
-                self.daemonize()
-
-        self.main()
-if __name__ == "__main__":
-    app = DobreprogramyNotify()
-    app.getopt()
