@@ -4,4 +4,4 @@ PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 
 
 class PluginMain(libnbnotify.Plugin):
         def _pluginInit(self):
-            print("Twitter - This feature will be implemented soon.")
+            return True

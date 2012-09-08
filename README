@@ -4,6 +4,10 @@ nbnotify - Nice Blog Notifications
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+08.09.2012 (v.0.3) <webnull.www@gmail.com>:
+    + libnotify support
+    + New Python installer from Subget project
+
 05.09.2012 (v.0.2.1) <webnull.www@gmail.com>:
     + Experimental Plugin System adpated from Subget project
     + Hooking class for plugins

@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 setup(name='nbnotify',
-      version='0.1',
+      version='0.3',
       package_dir={'': 'src'},      
       packages=['libnbnotify', 'libnbnotify.plugins']
      )
