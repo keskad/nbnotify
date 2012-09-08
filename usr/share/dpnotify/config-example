@@ -1,9 +1,0 @@
-[global]
-checktime = 60
-
-[connection]
-timeout = 5
-
-[links]
-1575c501c713d06c35715296ff661ba2 = http://www.dobreprogramy.pl/webnull/Subget-wersja-testowa-dla-Windows-dostepna,31846.html
-
