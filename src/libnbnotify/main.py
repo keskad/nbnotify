@@ -1,11 +1,14 @@
-#!/usr/bin/env python
 #-*- coding: utf-8 -*-
-import os, hashlib, re, BeautifulSoup, sys, subprocess, time
+import libnbnotify
+import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
+from distutils.sysconfig import get_python_lib
 
 if sys.version_info[0] >= 3:
     import configparser
     import http.client as httplib
+    import io as StringIO
 else:
+    import StringIO
     import ConfigParser as configparser
     import httplib
 
@@ -14,10 +17,19 @@ class nbnotify:
     Config = dict()
     #Config['connection'] = dict()
     #Config['connection']['timeout'] = 5 # 5 seconds
-    iconCacheDir = os.path.expanduser("~/.dpnotify/cache")
-    configDir = os.path.expanduser("~/.dpnotify")
+    iconCacheDir = os.path.expanduser("~/.nbnotify/cache")
+    configDir = os.path.expanduser("~/.nbnotify")
     db = None
     pages = dict()
+    Hooking = libnbnotify.Hooking()
+
+    # Plugin system adapted from Subget
+    disabledPlugins = list()
+    plugins=dict()
+    pluginsList=list() # ordered list
+
+    def __init__(self):
+        self.Logging = libnbnotify.Logging(self)
 
     def shellquote(self, s):
         return "'" + s.replace("'", "'\\''") + "'"
@@ -156,7 +168,8 @@ class nbnotify:
 
 
     def notifyNew(self, pageID, id):
-        os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
+        self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id])
+        #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
 
 
@@ -294,3 +307,113 @@ class nbnotify:
                 self.checkPage(pageID)
 
             time.sleep(t)
+
+    def doPluginsLoad(self):
+        """ Plugins support """
+
+        pluginsDir = get_python_lib()+"/libnbnotify/plugins/"
+
+        # fix for python bug which returns invalid path
+        if not os.path.isdir(pluginsDir):
+            pluginsDir = pluginsDir.replace("/usr/lib/", "/usr/local/lib/")
+
+        # list of disabled plugins
+        pluginsDisabled = self.configGetKey('plugins', 'disabled')
+
+        if pluginsDisabled:
+            self.disabledPlugins = pluginsDisabled.split(",")
+
+
+        file_list = glob.glob(pluginsDir+"*.py")
+
+
+        for Plugin in file_list:
+            Plugin = os.path.basename(Plugin)[:-3] # cut directory and .py
+
+            # skip the index
+            if Plugin == "__init__":
+                continue
+
+            try:
+                self.disabledPlugins.index(Plugin)
+                self.plugins[Plugin] = 'Disabled'
+                print("Disabling "+Plugin)
+
+                continue
+            except ValueError:
+                self.togglePlugin(False, Plugin, 'activate')
+
+        # add missing plugins
+        [self.pluginsList.append(k) for k in self.plugins if k not in self.pluginsList]
+
+    def togglePlugin(self, x, Plugin, Action, liststore=None):
+        if Action == 'activate':
+            print("Activating "+Plugin)
+
+            # load the plugin
+            try:
+                exec("import libnbnotify.plugins."+Plugin)
+                exec("self.plugins[Plugin] = libnbnotify.plugins."+Plugin)
+                exec("self.plugins[Plugin].instance = libnbnotify.plugins."+Plugin+".PluginMain(self)")
+
+                if "_pluginInit" in dir(self.plugins[Plugin].instance):
+                    self.plugins[Plugin].instance._pluginInit()
+
+                if not "type" in self.plugins[Plugin].PluginInfo:
+                    self.plugins[Plugin].PluginInfo['type'] = 'normal'
+
+                return True
+
+            except Exception as errno:
+                stack = StringIO.StringIO()
+                traceback.print_exc(file=stack)
+                self.plugins[Plugin] = str(errno)
+                print("ERROR: Cannot import "+Plugin+" ("+str(errno)+")\n"+str(stack.getvalue()))
+                
+                return False
+
+        elif Action == 'deactivate':
+            print("Deactivating "+Plugin)
+            if self.plugins[Plugin] == 'disabled':
+                return True
+
+            try:
+                self.plugins[Plugin].instance._pluginDestroy()
+                del self.plugins[Plugin].instance
+            except Exception:
+                pass
+
+            self.plugins[Plugin] = 'Disabled'
+            return True
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

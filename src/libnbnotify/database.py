@@ -17,7 +17,7 @@ class Database:
 
     socket = None
     cursor = None
-    dbPath = os.path.expanduser("~/.dpnotify/db_cache.sqlite3")
+    dbPath = os.path.expanduser("~/.nbnotify/db_cache.sqlite3")
 
     def dict_factory(self, cursor, row):
         d = {}

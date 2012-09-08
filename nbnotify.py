@@ -66,10 +66,12 @@ def parseArgs(app):
         if o in '--daemon':
             daemonize()
 
+
+    app.doPluginsLoad()
     app.main()
 
 def usage():
-    print("dpnotify -[short GNU option] [value] --[long GNU option]=[value]")
+    print("nbnotify -[short GNU option] [value] --[long GNU option]=[value]")
     print("\nUsage:\n")
     print("--help, -h (this message)")
     print("--add, -a (add link to database)")

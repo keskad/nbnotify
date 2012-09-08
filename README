@@ -1,9 +1,13 @@
-dpnotify
+nbnotify - Nice Blog Notifications
 ========
 
-Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear
+Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+05.09.2012 (v.0.2.1) <webnull.www@gmail.com>:
+    + Experimental Plugin System adpated from Subget project
+    + Hooking class for plugins
+
 05.09.2012 (v.0.2) <webnull.www@gmail.com>:
     * Renamed project from "dpnotify" to "nbnotify" ("Nice Blog Notifications")
     + Moved code to library
