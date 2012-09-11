@@ -11,7 +11,7 @@ class Logging:
     # 1 = Log everything but debugging messages
     # 2 = Debug messages
 
-    loggingLevel = 1 
+    loggingLevel = 2
     session = ""
     parent = None
 

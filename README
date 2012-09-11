@@ -8,6 +8,11 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+11.09.2012 (v.0.4) <webnull.www@gmail.com>:
+    + Fully implemented logging support
+    + "In air" configuration reloading
+    * Fixed --daemonize commandline parametr
+
 11.09.2012 (v.0.3.1) <webnull.www@gmail.com>:
     * PyPI compatibile installer (setup.py)
 

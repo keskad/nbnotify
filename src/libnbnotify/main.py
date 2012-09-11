@@ -19,6 +19,7 @@ class nbnotify:
     #Config['connection']['timeout'] = 5 # 5 seconds
     iconCacheDir = os.path.expanduser("~/.nbnotify/cache")
     configDir = os.path.expanduser("~/.nbnotify")
+    configTime = None # config last modification time
     db = None
     pages = dict()
     Hooking = libnbnotify.Hooking()
@@ -53,12 +54,14 @@ class nbnotify:
             Output += "\n"
 
         try:
-            print("Saving to "+self.configDir+"/config")
+            self.Logging.output("Saving to "+self.configDir+"/config", "debug", True)
             Handler = open(self.configDir+"/config", "wb")
             Handler.write(Output)
             Handler.close()
         except Exception as e:
             print("Cannot save configuration to file "+self.configDir+"/config")
+
+        self.configTime = os.path.getmtime(self.configDir+"/config")
 
     def loadConfig(self):
         """ Parsing configuration ini file """
@@ -81,7 +84,7 @@ class nbnotify:
             try:
                 Parser.read(configPath)
             except Exception as e:
-                print("Error parsing configuration file from "+self.configDir+"/config, error: "+str(e), "critical", True)
+                self.Logging.output("Error parsing configuration file from "+self.configDir+"/config, error: "+str(e), "critical", True)
                 sys.exit(os.EX_CONFIG)
 
             # all configuration sections
@@ -94,6 +97,8 @@ class nbnotify:
                 # and configuration variables inside of sections
                 for Option in Options:
                     self.Config[Section][Option] = Parser.get(Section, Option)
+
+        self.configTime = os.path.getmtime(self.configDir+"/config")
 
     def configGetSection(self, Section):
         """ Returns section as dictionary 
@@ -136,7 +141,7 @@ class nbnotify:
         connection.request("GET", "/"+str(self.pages[pageID]['link']))
         response = connection.getresponse()
         data = response.read()
-        print("GET: www.dobreprogramy.pl/"+self.pages[pageID]['link'])
+        self.Logging.output("GET: www.dobreprogramy.pl/"+self.pages[pageID]['link'], "debug", False)
         connection.close()
         return data
 
@@ -155,13 +160,13 @@ class nbnotify:
         match = re.findall(",([0-9]+).html", link)
 
         if len(match) == 0:
-            print("Invalid link format.")
+            self.Logging.output("Invalid link format: "+link, "warning", True)
             return False
 
         if str(match[0]) in self.pages:
             return False
 
-        print("+ Adding dobreprogramy.pl/"+link)
+        self.Logging.output("Adding dobreprogramy.pl/"+link, "", False)
 
         self.pages[str(match[0])] = {'hash': '', 'link': link, 'comments': dict()}
 
@@ -191,7 +196,7 @@ class nbnotify:
             w = open(icon, "wb")
             w.write(data)
             w.close()
-            print("GET: avatars.dpcdn.pl/"+url)
+            self.Logging.output("GET: avatars.dpcdn.pl/"+url, "debug", False)
             
         return icon
 
@@ -262,7 +267,7 @@ class nbnotify:
             self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['content'] = str(result['content'])
             self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['avatar'] = str(result['avatar'])
 
-        print("+ Loaded "+str(len(results))+" comments from cache.")
+        self.Logging.output("+ Loaded "+str(len(results))+" comments from cache.", "", True)
 
     def checkPage(self, pageID):
         """ Check if page was modified """
@@ -278,31 +283,47 @@ class nbnotify:
         section = self.configGetSection('links')
 
         if section == False:
-            print("No pages to scan found, use --add [link] to add new blog entries.")
+            self.Logging.output("No pages to scan found, use --add [link] to add new blog entries.", "", False)
             sys.exit(0)
 
         if len(section) == 0:
-            print("No pages to scan found, use --add [link] to add new blog entries.")
+            self.Logging.output("No pages to scan found, use --add [link] to add new blog entries.", "", False)
             sys.exit(0)
 
         for page in section:
             self.addPage(section[page])
+
+    def configCheckChanges(self):
+        if os.path.getmtime(self.configDir+"/config") != self.configTime:
+            self.Logging.output("Reloading configuration...", "debug", False)
+            self.loadConfig()
+            self.addPagesFromConfig()
+            return True
             
+    def getT(self):
+        try:
+            t = int(self.configGetKey("global", "checktime"))
+        except ValueError:
+            self.Logging.output("Invalid [global]->checktime value, must be integer not a string", "warning", True)
+            t = 30
+
+        self.Logging.output("t = "+str(t), "debug", False)
+
+        return t
 
     def main(self):
         self.addPagesFromConfig()
         self.loadCommentsFromDB()
 
-        try:
-            t = int(self.configGetKey("global", "checktime"))
-        except ValueError:
-            print("Invalid [global]->checktime value, must be integer not a string")
-            t = 30
+        t = self.getT()
 
         if t == False or t == "False" or t == None:
             t = 5 # 60 seconds
 
         while True:
+            if self.configCheckChanges() == True:
+                t = self.getT()
+
             for pageID in self.pages:
                 self.checkPage(pageID)
 
@@ -337,7 +358,7 @@ class nbnotify:
             try:
                 self.disabledPlugins.index(Plugin)
                 self.plugins[Plugin] = 'Disabled'
-                print("Disabling "+Plugin)
+                self.Logging.output("Disabling "+Plugin, "debug", True)
 
                 continue
             except ValueError:
@@ -348,7 +369,7 @@ class nbnotify:
 
     def togglePlugin(self, x, Plugin, Action, liststore=None):
         if Action == 'activate':
-            print("Activating "+Plugin)
+            self.Logging.output("Activating "+Plugin, "debug", True)
 
             # load the plugin
             try:
@@ -368,12 +389,12 @@ class nbnotify:
                 stack = StringIO.StringIO()
                 traceback.print_exc(file=stack)
                 self.plugins[Plugin] = str(errno)
-                print("ERROR: Cannot import "+Plugin+" ("+str(errno)+")\n"+str(stack.getvalue()))
+                self.Logging.output("ERROR: Cannot import "+Plugin+" ("+str(errno)+")\n"+str(stack.getvalue()), "warning", True)
                 
                 return False
 
         elif Action == 'deactivate':
-            print("Deactivating "+Plugin)
+            self.Logging.output("Deactivating "+Plugin, "debug", True)
             if self.plugins[Plugin] == 'disabled':
                 return True
 
@@ -385,25 +406,6 @@ class nbnotify:
 
             self.plugins[Plugin] = 'Disabled'
             return True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

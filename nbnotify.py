@@ -12,7 +12,7 @@ def parseArgs(app):
     app.loadConfig()
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:r:l", ["help", "add=", "remove=", 'list', 'daemon'])
+        opts, args = getopt.getopt(sys.argv[1:], "ha:r:l", ["help", "add=", "remove=", 'list', 'daemonize'])
     except Exception as err:
         print("Error: "+str(err)+", Try --help for usage\n\n")
         usage()
@@ -63,7 +63,7 @@ def parseArgs(app):
 
             sys.exit(0)
 
-        if o in '--daemon':
+        if o in '--daemonize':
             daemonize()
 
 
