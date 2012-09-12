@@ -1,7 +1,9 @@
 #-*- coding: utf-8 -*-
 import libnbnotify
+import traceback
 import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
 from distutils.sysconfig import get_python_lib
+from StringIO import StringIO
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -137,11 +139,11 @@ class nbnotify:
     def downloadPage(self, pageID):
         """ Download page and check md5 sum """
 
-        connection = httplib.HTTPConnection("www.dobreprogramy.pl", 80, timeout=int(self.configGetKey("connection", "timeout")))
+        connection = httplib.HTTPConnection(self.pages[pageID]['domain'], 80, timeout=int(self.configGetKey("connection", "timeout")))
         connection.request("GET", "/"+str(self.pages[pageID]['link']))
         response = connection.getresponse()
         data = response.read()
-        self.Logging.output("GET: www.dobreprogramy.pl/"+self.pages[pageID]['link'], "debug", False)
+        self.Logging.output("GET: "+self.pages[pageID]['domain']+"/"+self.pages[pageID]['link'], "debug", False)
         connection.close()
         return data
 
@@ -156,20 +158,26 @@ class nbnotify:
         return False
 
     def addPage(self, link):
-        link = link.replace("http://www.dobreprogramy.pl/", "").replace("http://dobreprogramy.pl", "").replace("dobreprogramy.pl", "").replace("www.dobreprogramy.pl", "")
-        match = re.findall(",([0-9]+).html", link)
+        data = self.Hooking.executeHooks(self.Hooking.getAllHooks("onAddPage"), link)
 
-        if len(match) == 0:
-            self.Logging.output("Invalid link format: "+link, "warning", True)
+        if type(data).__name__ == "dict":
+            try:
+                self.pages[str(data['id'])] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain']}
+                self.Logging.output("Adding "+link, "", False)
+            except Exception as e:
+                buffer = StringIO()
+                traceback.print_exc(file=buffer)
+                self.Logging.output("Cannot add "+link+", exception: "+str(buffer.getvalue()), "warning", True, skipDate=True)
+
+        else:
+            self.Logging.output("No any suitable extension supporting link format \""+link+"\" found", "warning", True)
             return False
 
-        if str(match[0]) in self.pages:
-            return False
-
-        self.Logging.output("Adding dobreprogramy.pl/"+link, "", False)
-
-        self.pages[str(match[0])] = {'hash': '', 'link': link, 'comments': dict()}
-
+    def addCommentToDB(self, pageid, id, localAvatar):
+        try:
+            self.db.cursor.execute("INSERT INTO `comments` (page_id, comment_id, content, username, avatar) VALUES (?, ?, ?, ?, ?)", (str(pageID), str(id), str(self.pages[str(pageID)]['comments'][id]['content']), str(self.pages[str(pageID)]['comments'][id]['username']), str(localAvatar)))
+        except sqlite3.IntegrityError:
+            pass # sqlite3.IntegrityError: column comment_id is not unique
 
 
     def notifyNew(self, pageID, id):
@@ -177,82 +185,17 @@ class nbnotify:
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
 
-
-    def downloadAvatar(self, avatar):
-        """ Download avatar to local cache """
-
-        m = hashlib.md5(avatar).hexdigest()
-        icon = self.iconCacheDir+"/"+m+".png"
-
-        if not os.path.isfile(icon):
-            url = avatar.replace("http://avatars.dpcdn.pl", "").replace("http://www.avatars.dpcdn.pl", "").replace("www.avatars.dpcdn.pl", "").replace("avatars.dpcdn.pl", "")
-
-            connection = httplib.HTTPConnection("avatars.dpcdn.pl", 80, timeout=int(self.configGetKey("connection", "timeout")))
-            connection.request("GET", url)
-            response = connection.getresponse()
-            data = response.read()
-            connection.close()
-
-            w = open(icon, "wb")
-            w.write(data)
-            w.close()
-            self.Logging.output("GET: avatars.dpcdn.pl/"+url, "debug", False)
-            
-        return icon
-
     def checkComments(self, pageID, data=''):
         """ Parse all comments """
 
-        soup = BeautifulSoup.BeautifulSoup(data)
-
-        self.pages[pageID]['title'] = str(soup.html.head.title.string)
-        commentsHTML = soup.findAll('div', {'class': "odd item"})
-        commentsEven = soup.findAll('div', {'class': "even item"})
-        commentsHTML = commentsHTML+commentsEven
-
-        isNew = False
-        commentsList = dict()
-
-        for comment in commentsHTML:
-            # comment id - first <img src="(.*)"
-            cSoup = BeautifulSoup.BeautifulSoup(str(comment))
-            id = str(cSoup.div['id'])
-
-            if not id in self.pages[str(pageID)]['comments']:
-                isNew = True
-
-            avatar = str(cSoup.img['src'])
-            localAvatar = self.downloadAvatar(avatar)
-            self.pages[str(pageID)]['comments'][id] = {'avatar': localAvatar}
-
-            # user name - <a class="color-inverse"
-            cInv = cSoup.findAll("a", {'class': 'color-inverse'})
-
-            # guests users
-            if len(cInv) == 0: 
-                cInv = cSoup.findAll("span")
-                nSoup = BeautifulSoup.BeautifulSoup(str(cInv[0]))
-                self.pages[str(pageID)]['comments'][id]['username'] = str(nSoup.span.string)
-
-            else:
-                nSoup = BeautifulSoup.BeautifulSoup(str(cInv[0]))
-                self.pages[str(pageID)]['comments'][id]['username'] = str(nSoup.a.string)
-
-            # comment content - <div class="text-h75 tresc"
-            nSoup = str(cSoup.findAll("div", {'class': "text-h75 tresc"})[0]).replace('<div class="text-h75 tresc">', '').replace('</div>', '')
-            self.pages[str(pageID)]['comments'][id]['content'] = nSoup
-           # self.pages[str(pageID)]['comments'][id]['content'] = 
-
-            if isNew == True:
-                self.notifyNew(pageID, id)
-                try:
-                    self.db.cursor.execute("INSERT INTO `comments` (page_id, comment_id, content, username, avatar) VALUES (?, ?, ?, ?, ?)", (str(pageID), str(id), str(self.pages[str(pageID)]['comments'][id]['content']), str(self.pages[str(pageID)]['comments'][id]['username']), str(localAvatar)))
-                except sqlite3.IntegrityError:
-                    pass # sqlite3.IntegrityError: column comment_id is not unique
-                isNew = False
-
-
-        
+        try:
+            extension = self.pages[pageID]['extension']
+            extension.checkComments(pageID, data)
+        except Exception as e:
+            stack = StringIO()
+            traceback.print_exc(file=stack)
+            self.plugins[Plugin] = str(e)
+            self.Logging.output("Cannot execute extension.checkComments() "+str(stack.getvalue()), "warning", True)
 
         return True
 
@@ -386,7 +329,7 @@ class nbnotify:
                 return True
 
             except Exception as errno:
-                stack = StringIO.StringIO()
+                stack = StringIO()
                 traceback.print_exc(file=stack)
                 self.plugins[Plugin] = str(errno)
                 self.Logging.output("ERROR: Cannot import "+Plugin+" ("+str(errno)+")\n"+str(stack.getvalue()), "warning", True)

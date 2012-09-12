@@ -89,6 +89,13 @@ class Logging:
             else:
                 print(self.parent._("Error")+": "+self.parent._("Cannot execute hook")+"; onLogChange; "+str(e))
 
+class HookingException(Exception):
+    def __init__(self, value):
+        self.parameter = value
+
+    def __str__(self):
+        return repr(self.parameter)
+
 class Hooking:
     Hooks = defaultdict(list) # list of all hooks
 
@@ -122,6 +129,9 @@ class Hooking:
                 try:
                     data = Hook(data)
                 except Exception as e:
+                    if str(e) == "pass": # request of a plugin to discontinue hooking
+                        break
+
                     buffer = StringIO()
                     traceback.print_exc(file=buffer)
                     print(buffer.getvalue())
@@ -134,3 +144,5 @@ class Plugin:
 
     def __init__(self, app=None):
         self.app = app
+        self.Logging = app.Logging
+
