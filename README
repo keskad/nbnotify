@@ -8,6 +8,9 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+12.09.2012 (v.0.4.1) <webnull.www@gmail.com>:
+    * Fixed python packaging error (package name)
+
 11.09.2012 (v.0.4) <webnull.www@gmail.com>:
     + Fully implemented logging support
     + "In air" configuration reloading

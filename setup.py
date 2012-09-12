@@ -83,7 +83,7 @@ class InstallData(install_data):
 
         return fileList
 
-setup(name='nbnotify',
+setup(name='libnbnotify',
       description = "Nice Blog Notifications",
       long_description = "Watches blog entries and sends notifications when a new comment will appear",
       author = "Damian Kęska",
