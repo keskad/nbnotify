@@ -2,15 +2,15 @@
 import libnbnotify
 import traceback
 import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
+import sqlite3
 from distutils.sysconfig import get_python_lib
-from StringIO import StringIO
 
 if sys.version_info[0] >= 3:
     import configparser
     import http.client as httplib
     import io as StringIO
 else:
-    import StringIO
+    from StringIO import StringIO
     import ConfigParser as configparser
     import httplib
 
@@ -173,7 +173,7 @@ class nbnotify:
             self.Logging.output("No any suitable extension supporting link format \""+link+"\" found", "warning", True)
             return False
 
-    def addCommentToDB(self, pageid, id, localAvatar):
+    def addCommentToDB(self, pageID, id, localAvatar):
         try:
             self.db.cursor.execute("INSERT INTO `comments` (page_id, comment_id, content, username, avatar) VALUES (?, ?, ?, ?, ?)", (str(pageID), str(id), str(self.pages[str(pageID)]['comments'][id]['content']), str(self.pages[str(pageID)]['comments'][id]['username']), str(localAvatar)))
         except sqlite3.IntegrityError:
@@ -194,7 +194,6 @@ class nbnotify:
         except Exception as e:
             stack = StringIO()
             traceback.print_exc(file=stack)
-            self.plugins[Plugin] = str(e)
             self.Logging.output("Cannot execute extension.checkComments() "+str(stack.getvalue()), "warning", True)
 
         return True
@@ -263,19 +262,26 @@ class nbnotify:
         if t == False or t == "False" or t == None:
             t = 5 # 60 seconds
 
-        while True:
-            if self.configCheckChanges() == True:
-                t = self.getT()
+        try:
+            while True:
+                if self.configCheckChanges() == True:
+                    t = self.getT()
 
-            for pageID in self.pages:
-                self.checkPage(pageID)
+                for pageID in self.pages:
+                    self.checkPage(pageID)
 
-            time.sleep(t)
+                time.sleep(t)
+        except KeyboardInterrupt:
+            print("Got keyboard interrupt, exiting.")
+            sys.exit(0)
 
     def doPluginsLoad(self):
         """ Plugins support """
 
         pluginsDir = get_python_lib()+"/libnbnotify/plugins/"
+
+        if os.path.isdir(pluginsDir.replace("dist-packages/", "")):
+            pluginsDir = pluginsDir.replace("dist-packages/", "")
 
         # fix for python bug which returns invalid path
         if not os.path.isdir(pluginsDir):

@@ -1,8 +1,10 @@
+#-*- coding: utf-8 -*-
 import libnbnotify
 import re
 import BeautifulSoup
 import hashlib
 import os
+import httplib
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Provides support for blogs on dobreprogramy.pl'}
 
@@ -36,7 +38,7 @@ class PluginMain(libnbnotify.Plugin):
             if not os.path.isfile(icon):
                 url = avatar.replace("http://avatars.dpcdn.pl", "").replace("http://www.avatars.dpcdn.pl", "").replace("www.avatars.dpcdn.pl", "").replace("avatars.dpcdn.pl", "")
 
-                connection = httplib.HTTPConnection("avatars.dpcdn.pl", 80, timeout=int(self.configGetKey("connection", "timeout")))
+                connection = httplib.HTTPConnection("avatars.dpcdn.pl", 80, timeout=int(self.app.configGetKey("connection", "timeout")))
                 connection.request("GET", url)
                 response = connection.getresponse()
                 data = response.read()
@@ -54,7 +56,8 @@ class PluginMain(libnbnotify.Plugin):
 
             soup = BeautifulSoup.BeautifulSoup(data)
 
-            self.app.pages[pageID]['title'] = str(soup.html.head.title.string)
+			# the title is too long, so we cut it a little bit
+            self.app.pages[pageID]['title'] = str(soup.html.head.title.string).replace("- blogi użytkowników portalu dobreprogramy", "")
             commentsHTML = soup.findAll('div', {'class': "odd item"})
             commentsEven = soup.findAll('div', {'class': "even item"})
             commentsHTML = commentsHTML+commentsEven
