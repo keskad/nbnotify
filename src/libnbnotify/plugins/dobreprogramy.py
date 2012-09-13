@@ -18,7 +18,17 @@ class PluginMain(libnbnotify.Plugin):
                 return False
 
             link = link.replace("http://www.dobreprogramy.pl/", "").replace("http://dobreprogramy.pl", "").replace("dobreprogramy.pl", "").replace("www.dobreprogramy.pl", "")
-            match = re.findall(",([0-9]+).html", link)
+
+            # RSS channel
+            match = re.findall("([A-Za-z]+),Rss", link)
+
+            if len(match) > 0:
+                match[0] = "dprss_"+match[0]
+                self.Logging.output("Found RSS at "+match[0], "debug", False)
+            else:
+                # match for blog entry
+                match = re.findall(",([0-9]+).html", link)
+            
 
             if len(match) == 0:
                 self.Logging.output("Invalid dobreprogramy.pl link format.")
@@ -29,13 +39,30 @@ class PluginMain(libnbnotify.Plugin):
 
             return {'id': str(match[0]), 'link': link, 'extension': self, 'domain': 'www.dobreprogramy.pl'}
 
-        def downloadAvatar(self, avatar):
+        def downloadAvatar(self, avatar, fromHTML=False):
             """ Download avatar to local cache """
 
             m = hashlib.md5(avatar).hexdigest()
             icon = self.app.iconCacheDir+"/"+m+".png"
 
             if not os.path.isfile(icon):
+                # getting avatar from profile page
+                if fromHTML == True:
+                    userName = avatar.replace(",Rss", "")
+                    self.Logging.output("GET: dobreprogramy.pl/"+userName, "debug", False)
+
+                    connection = httplib.HTTPConnection("www.dobreprogramy.pl", 80, timeout=int(self.app.configGetKey("connection", "timeout")))
+                    connection.request("GET", "/"+userName)
+                    response = connection.getresponse()
+                    data = response.read()
+                    connection.close()
+
+                    # <img src="http://avatars.dpcdn.pl/Avatar.ashx?file=140049_1346504879.png&amp;type=UGCUserInfo" width="140" heigh="140" alt="avatar">
+                    soup = BeautifulSoup.BeautifulSoup(data)
+
+                    element = soup.find("img", alt="avatar")
+                    avatar = element['src'] 
+
                 url = avatar.replace("http://avatars.dpcdn.pl", "").replace("http://www.avatars.dpcdn.pl", "").replace("www.avatars.dpcdn.pl", "").replace("avatars.dpcdn.pl", "")
 
                 connection = httplib.HTTPConnection("avatars.dpcdn.pl", 80, timeout=int(self.app.configGetKey("connection", "timeout")))
@@ -51,8 +78,41 @@ class PluginMain(libnbnotify.Plugin):
                 
             return icon
 
+        def checkRSS(self, pageID, data):
+            soup = BeautifulSoup.BeautifulStoneSoup(data)
+            items = soup.findAll('item')
+            isNew = False
+
+            for item in items:
+                title = item.find("title").string
+                author = item.find("author").string
+                content = item.find("description").string
+
+                id = hashlib.md5(title).hexdigest()
+
+                if not id in self.app.pages[str(pageID)]['comments']:
+                    isNew = True
+
+                localAvatar = self.downloadAvatar(author, fromHTML=True)
+                self.app.pages[str(pageID)]['title'] = title
+                self.app.pages[str(pageID)]['comments'][id] = {'avatar': localAvatar}
+                self.app.pages[str(pageID)]['comments'][id]['username'] = author
+                self.app.pages[str(pageID)]['comments'][id]['content'] = content
+
+                if isNew == True:
+                    self.app.addCommentToDB(pageID, id, localAvatar)
+                    self.app.notifyNew(pageID, id, "%username% utworzył wpis \"%title%\"")
+                    isNew = False
+                
+
+            return True
+            
+
         def checkComments(self, pageID, data=''):
             """ Parse all comments """
+
+            if pageID[0:5] == "dprss":
+                return self.checkRSS(pageID, data)
 
             soup = BeautifulSoup.BeautifulSoup(data)
 
@@ -96,6 +156,6 @@ class PluginMain(libnbnotify.Plugin):
                # self.pages[str(pageID)]['comments'][id]['content'] = 
 
                 if isNew == True:
-                    self.app.notifyNew(pageID, id)
+                    self.app.notifyNew(pageID, id, "%username% skomentował wpis \"%title%\"")
                     self.app.addCommentToDB(pageID, id, localAvatar)
                     isNew = False

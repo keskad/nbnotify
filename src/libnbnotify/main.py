@@ -180,8 +180,8 @@ class nbnotify:
             pass # sqlite3.IntegrityError: column comment_id is not unique
 
 
-    def notifyNew(self, pageID, id):
-        self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id])
+    def notifyNew(self, pageID, id, template="%username% skomentował \"%title%\""):
+        self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id, template])
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
 

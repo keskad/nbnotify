@@ -20,8 +20,11 @@ class PluginMain(libnbnotify.Plugin):
         pageID = a[0]
         id = a[1]
 
+        # a[2] - template
+        content = a[2].replace("%username%", self.app.pages[pageID]['comments'][id]['username']).replace("%title%", self.app.pages[pageID]['title'].replace("\n", ""))
+
         # it's the same thing like a commented line below
-        self._libnotifySend(self._stripHTML(self.app.pages[pageID]['comments'][id]['content'].replace("<br/>", "\n")), "\""+self.app.pages[pageID]['comments'][id]['username']+"\" skomentował wpis "+self.app.pages[pageID]['title'].replace("\n", ""), self.app.pages[pageID]['comments'][id]['avatar'])
+        self._libnotifySend(self._stripHTML(self.app.pages[pageID]['comments'][id]['content'].replace("<br/>", "\n")), content, self.app.pages[pageID]['comments'][id]['avatar'])
 
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
