@@ -20,7 +20,7 @@ class PluginMain(libnbnotify.Plugin):
             link = link.replace("http://www.dobreprogramy.pl/", "").replace("http://dobreprogramy.pl", "").replace("dobreprogramy.pl", "").replace("www.dobreprogramy.pl", "")
 
             # RSS channel
-            match = re.findall("([A-Za-z]+),Rss", link)
+            match = re.findall("([A-Za-z0-9_\-\@ĄąŻżĘęŹźÓóŁł\$\#\&\;]+),Rss", link)
 
             if len(match) > 0:
                 match[0] = "dprss_"+match[0]

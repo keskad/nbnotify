@@ -8,6 +8,12 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+14.09.2012 (v.0.5.1) <webnull.www@gmail.com>:
+    * Fixed RSS url handling in dobreprogramy, now urls like http://www.dobreprogramy.pl/Jaahquubel_,Rss with "_" are supported
+
+13.09.2012 (v.0.5) <webnull.www@gmail.com>:
+    + Support for dobreprogramy.pl RSS channel monitoring
+
 13.09.2012 (v.0.4.3) <webnull.www@gmail.com>:
     * Fixed working on Debian based operating systems (Tested on Linux Mint)
     * Many minor errors fixed
