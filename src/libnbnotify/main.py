@@ -136,16 +136,41 @@ class nbnotify:
         except KeyError:
             return False
 
+    def httpGET(self, domain, url):
+        """ Do a HTTP GET request, handle errors """
+
+        if url[0:1] != "/":
+            url = "/"+url
+
+        data = False
+
+        try:
+            connection = httplib.HTTPConnection(domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
+            connection.request("GET", str(url))
+            response = connection.getresponse()
+            status = str(response.status)
+            data = response.read()
+            self.Logging.output("GET: "+domain+url+", "+status, "debug", False)
+            connection.close()
+
+            if len(data) == 0 and status == "301" :
+                self.Logging.output("Adding \"www\" subdomain to url", "warning", True)
+                connection = httplib.HTTPConnection("www."+domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
+                connection.request("GET", str(url))
+                response = connection.getresponse()
+                status = str(response.status)
+                data = response.read()
+                self.Logging.output("GET: www."+domain+url+", "+status, "debug", False)
+                connection.close()
+        except Exception as e:
+            self.Logging.output("HTTP request failed, "+str(e), "warning", True)
+
+        return data
+
     def downloadPage(self, pageID):
         """ Download page and check md5 sum """
 
-        connection = httplib.HTTPConnection(self.pages[pageID]['domain'], 80, timeout=int(self.configGetKey("connection", "timeout")))
-        connection.request("GET", "/"+str(self.pages[pageID]['link']))
-        response = connection.getresponse()
-        data = response.read()
-        self.Logging.output("GET: "+self.pages[pageID]['domain']+"/"+self.pages[pageID]['link'], "debug", False)
-        connection.close()
-        return data
+        return self.httpGET(self.pages[pageID]['domain'], str(self.pages[pageID]['link']))
 
     def checkSum(self, data, pageID):
         # check md5 sums
@@ -158,7 +183,32 @@ class nbnotify:
         return False
 
     def addPage(self, link):
-        data = self.Hooking.executeHooks(self.Hooking.getAllHooks("onAddPage"), link)
+        hooks = self.Hooking.getAllHooks("onAddPage")
+        data = False
+        staticPlugin = str(self.configGetKey("linktypes", hashlib.md5(link).hexdigest()))
+        breakHere = False
+
+        # search for plugin that handles link correctly
+        if hooks:
+            for Hook in hooks:
+                pluginName = str(Hook.im_class).replace("libnbnotify.plugins.", "").replace(".PluginMain", "")
+
+                # found specified plugin
+                if staticPlugin == pluginName:
+                    breakHere = True 
+
+                try:
+                    x = Hook({'link': link, 'staticPlugin': staticPlugin})
+
+                    if type(x).__name__ == "dict":
+                        data = x
+                        break
+
+                except Exception as e:
+                    self.Logging.output("Cannot execute hook "+str(Hook)+", error: "+str(e), "warning", True)
+
+                if breakHere == True:
+                    break
 
         if type(data).__name__ == "dict":
             try:

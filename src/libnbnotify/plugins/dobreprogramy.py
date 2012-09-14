@@ -13,7 +13,9 @@ class PluginMain(libnbnotify.Plugin):
             self.app.Hooking.connectHook("onAddPage", self.addPage)
             return True
 
-        def addPage(self, link):
+        def addPage(self, data):
+            link = data['link']
+
             if not "dobreprogramy.pl" in link:
                 return False
 
@@ -51,30 +53,33 @@ class PluginMain(libnbnotify.Plugin):
                     userName = avatar.replace(",Rss", "")
                     self.Logging.output("GET: dobreprogramy.pl/"+userName, "debug", False)
 
-                    connection = httplib.HTTPConnection("www.dobreprogramy.pl", 80, timeout=int(self.app.configGetKey("connection", "timeout")))
-                    connection.request("GET", "/"+userName)
-                    response = connection.getresponse()
-                    data = response.read()
-                    connection.close()
+                    data = self.app.httpGET("www.dobreprogramy.pl", "/"+userName)
+
+                    if data == False:
+                        self.Logging.output("Cannot get avatar link, connection problem.", "warning", True)
+                        return "" # Return always same type like in C (string)
 
                     # <img src="http://avatars.dpcdn.pl/Avatar.ashx?file=140049_1346504879.png&amp;type=UGCUserInfo" width="140" heigh="140" alt="avatar">
                     soup = BeautifulSoup.BeautifulSoup(data)
 
-                    element = soup.find("img", alt="avatar")
-                    avatar = element['src'] 
+                    try:
+                        element = soup.find("img", alt="avatar")
+                        avatar = element['src'] 
+                    except Exception as e:
+                        self.Logging.output("Something went wrong parsing HTML code to get avatar link, maybe dobreprogramy.pl has changed something?", "warning", True)
+                        return ""
 
                 url = avatar.replace("http://avatars.dpcdn.pl", "").replace("http://www.avatars.dpcdn.pl", "").replace("www.avatars.dpcdn.pl", "").replace("avatars.dpcdn.pl", "")
+                data = self.app.httpGET("avatars.dpcdn.pl", url)
 
-                connection = httplib.HTTPConnection("avatars.dpcdn.pl", 80, timeout=int(self.app.configGetKey("connection", "timeout")))
-                connection.request("GET", url)
-                response = connection.getresponse()
-                data = response.read()
-                connection.close()
-
-                w = open(icon, "wb")
-                w.write(data)
-                w.close()
-                self.Logging.output("GET: avatars.dpcdn.pl/"+url, "debug", False)
+                if data == False:
+                    self.Logging.output("Cannot download avatar file, url=avatars.dpcdn.pl/"+url, "warning", True)
+                    return ""
+                else:
+                    w = open(icon, "wb")
+                    w.write(data)
+                    w.close()
+                    self.Logging.output("Avatar saved: avatars.dpcdn.pl/"+url, "debug", False)
                 
             return icon
 
