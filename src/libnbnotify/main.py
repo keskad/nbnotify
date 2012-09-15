@@ -24,6 +24,7 @@ class nbnotify:
     configTime = None # config last modification time
     db = None
     pages = dict()
+    disabledPages = dict() # Page => Reason
     Hooking = libnbnotify.Hooking()
 
     # Plugin system adapted from Subget
@@ -182,6 +183,11 @@ class nbnotify:
         self.pages[pageID]['hash'] = m
         return False
 
+    def setType(self, link, Type):
+        m = hashlib.md5(link).hexdigest()
+        self.configSetKey('linktypes', m, Type)
+        return m
+
     def addPage(self, link):
         hooks = self.Hooking.getAllHooks("onAddPage")
         data = False
@@ -235,6 +241,11 @@ class nbnotify:
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
 
+    def disablePage(self, pageID, reason=''):
+        self.disabledPages[pageID] = reason
+        self.Logging.output("Disabling page "+pageID+" due to found errors.")
+        return True
+
     def checkComments(self, pageID, data=''):
         """ Parse all comments """
 
@@ -245,6 +256,7 @@ class nbnotify:
             stack = StringIO()
             traceback.print_exc(file=stack)
             self.Logging.output("Cannot execute extension.checkComments() "+str(stack.getvalue()), "warning", True)
+            self.disablePage(pageID, str(stack.getvalue()))
 
         return True
 
@@ -254,15 +266,23 @@ class nbnotify:
         results = query.fetchall()
 
         for result in results:
-            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])] = dict()
-            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['username'] = str(result['username'])
-            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['content'] = str(result['content'])
-            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['avatar'] = str(result['avatar'])
+            try:
+                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])] = dict()
+                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['username'] = str(result['username'])
+                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['content'] = str(result['content'])
+                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['avatar'] = str(result['avatar'])
+            except KeyError:
+                # delete comments that dont belongs to any page
+                self.db.query("DELETE FROM `comments` WHERE `comment_id`='"+str(result['comment_id'])+"'")
 
         self.Logging.output("+ Loaded "+str(len(results))+" comments from cache.", "", True)
 
     def checkPage(self, pageID):
         """ Check if page was modified """
+
+        if pageID in self.disabledPages:
+            self.Logging.output(self.pages[pageID]['link']+" was disabled because of errors.")
+            return False
 
         data = self.downloadPage(pageID)
 

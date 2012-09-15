@@ -25,7 +25,7 @@ class PluginMain(libnbnotify.Plugin):
             match = re.findall("([A-Za-z0-9_\-\@ĄąŻżĘęŹźÓóŁł\$\#\&\;]+),Rss", link)
 
             if len(match) > 0:
-                match[0] = "dprss_"+match[0]
+                match[0] = "rss_"+match[0]
                 self.Logging.output("Found RSS at "+match[0], "debug", False)
             else:
                 # match for blog entry
@@ -39,7 +39,7 @@ class PluginMain(libnbnotify.Plugin):
             if str(match[0]) in self.app.pages:
                 return False
 
-            return {'id': str(match[0]), 'link': link, 'extension': self, 'domain': 'www.dobreprogramy.pl'}
+            return {'id': "dp_"+str(match[0]), 'link': link, 'extension': self, 'domain': 'www.dobreprogramy.pl'}
 
         def downloadAvatar(self, avatar, fromHTML=False):
             """ Download avatar to local cache """
@@ -116,7 +116,7 @@ class PluginMain(libnbnotify.Plugin):
         def checkComments(self, pageID, data=''):
             """ Parse all comments """
 
-            if pageID[0:5] == "dprss":
+            if pageID[0:6] == "dp_rss":
                 return self.checkRSS(pageID, data)
 
             soup = BeautifulSoup.BeautifulSoup(data)

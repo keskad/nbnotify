@@ -103,7 +103,7 @@ def parseArgs(app):
 
             if not Type == None:
                 if os.path.isfile(libnbnotify.plugins.__path__[0]+"/"+Type+".py"):
-                    app.configSetKey('linktypes', hashlib.md5(a).hexdigest(), Type)
+                    app.setType(a, Type)
                     print("Type changed to \""+str(Type)+"\" for link: "+str(a))
                 else:
                     print("Invalid type "+a+" - does not exists in plugins list.")

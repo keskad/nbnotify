@@ -6,7 +6,7 @@ import os
 import httplib
 import urlparse
 
-PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Provides support for blogs on dobreprogramy.pl'}
+PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Provides simple RSS handler'}
 
 class PluginMain(libnbnotify.Plugin):
         name = "rss"
@@ -21,6 +21,53 @@ class PluginMain(libnbnotify.Plugin):
                 domain = urlparse.urlparse(data['link']).hostname
                 link = data['link'].replace("http://"+domain, "")
                 id = "rss_"+hashlib.md5(data['link']).hexdigest()
+                fixedUrl = self.app.configGetKey("rss_fixurl", id)
+
+                ##### HANDLING 301 MOVED
+                if fixedUrl != "True":
+                    self.Logging.output("Checking RSS url and trying to fix domain/location if got 301 MOVED")
+
+                    try:
+                        connection = httplib.HTTPConnection(domain, 80, timeout=int(self.app.configGetKey("connection", "timeout")))
+                        connection.request("GET", link)
+                        response = connection.getresponse()
+
+                        if str(response.status) != "200":
+                            if str(response.status) != "301":
+                                self.Logging.output("Got "+str(response.status)+", cannot parse link.")
+                                return False
+
+                            headers = response.getheaders()
+                            for header in headers:
+                                if header[0] == "location":
+                                    parsedurl = urlparse.urlparse(header[1])
+                                    domain = parsedurl.netloc # move to other domain
+                                    link = parsedurl.path # move to other path
+
+                                    # ?a=b&c=d
+                                    if parsedurl.query != "":
+                                        link += link+"?"+parsedurl.query
+
+                                    self.app.configSetKey("rss_fixurl", id, header[1])
+                                    self.app.saveConfiguration()
+                        else:
+                            self.app.configSetKey("rss_fixurl", id, "Correct")
+                            self.app.saveConfiguration()
+                    except Exception as e:
+                        self.Logging.output("Received exception while trying to check url, "+str(e))
+                        return False
+                else:
+                    if fixedUrl != "Correct":
+                        url = urlparse.urlparse(data['link'])
+                        domain = url.netloc
+                        link = url.path
+
+                        # ?a=b&c=d
+                        if url.query != "":
+                            link += link+"?"+url.query
+
+                #### END OF 301 MOVED HANDLER
+                
 
                 # icon file
                 a = self.app.configGetKey("rssicons", id)

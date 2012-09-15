@@ -8,6 +8,11 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+15.09.2012 (v.0.5.3) <webnull.www@gmail.com>:
+    + Small API improvements (see git diff)
+    + Better error handling for plugins, now some pages may be automaticaly disabled if they cause errors
+    * Fixed bug when after deletion of page application reported KeyError
+
 14.09.2012 (v.0.5.2) <webnull.www@gmail.com>:
     * Fixed timeout errors in HTTP Requests, better HTTP errors handling
     + Support for RSS channels
