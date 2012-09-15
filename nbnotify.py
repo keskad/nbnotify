@@ -156,7 +156,7 @@ def usage():
     print("--value, (set value of configuration variable specified in --config)")
     print("--force-new (force creation of new configuration variable)")
 
-def daemonize (self, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
+def daemonize (stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     '''This forks the current process into a daemon.
     The stdin, stdout, and stderr arguments are file names that
     will be opened and be used to replace the standard file descriptors
