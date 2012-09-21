@@ -51,7 +51,7 @@ class PluginMain(libnbnotify.Plugin):
 
         def checkComments(self, pageID, data):
             try:
-                timeline = self.api.GetUserTimeline("webnull")
+                timeline = self.api.GetUserTimeline(data)
             except Exception:
                 self.app.removePage(pageID)
                 return False
