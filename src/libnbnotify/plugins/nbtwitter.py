@@ -12,7 +12,6 @@ class PluginMain(libnbnotify.Plugin):
         api = ""
 
         def _pluginInit(self):
-            print twitter
             self.api = twitter.Api()
             self.app.Hooking.connectHook("onAddPage", self.addPage)
             return True
@@ -44,12 +43,14 @@ class PluginMain(libnbnotify.Plugin):
                     w.close()
                     self.Logging.output("Avatar saved: "+avatar, "debug", False)
                 else:
-                    self.Logging.output("Cannot download avatar: "+avatar, "debug", False)
+                    self.Logging.output("Cannot download avatar: "+avatar, "warning", True)
                     return ""
             
             return icon
 
         def checkComments(self, pageID, data):
+            self.Logging.output("Twitter API check: "+str(data), "debug", False)
+
             try:
                 timeline = self.api.GetUserTimeline(data)
             except Exception:
