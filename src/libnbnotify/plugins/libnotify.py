@@ -7,6 +7,7 @@ PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 
 class PluginMain(libnbnotify.Plugin):
     def _pluginInit(self):
         self.app.Hooking.connectHook("onNotifyNew", self.notifySend)
+        self.app.Hooking.connectHook("onNotifyNewData", self.notifySendData)
 
         try:
             import pynotify
@@ -14,6 +15,14 @@ class PluginMain(libnbnotify.Plugin):
             self.libnotify = pynotify
         except Exception as e:
             pass
+
+    def notifySendData(self, a):
+        data = a[0]
+        title = a[1]
+        #pageID = a[2]
+        icon = a[3]
+
+        self._libnotifySend(data, title, icon)
 
 
     def notifySend(self, a):

@@ -8,6 +8,10 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+21.09.2012 (v.0.5.4) <webnull.www@gmail.com>:
+    + Added removePage(), notifyNewData() functions
+    + Twitter plugin is now able to monitor activity of selected user (eg. https://twitter.com/webnull)
+
 15.09.2012 (v.0.5.3.1) <webnull.www@gmail.com>:
     * Fixed daemonize function
 

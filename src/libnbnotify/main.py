@@ -188,6 +188,15 @@ class nbnotify:
         self.configSetKey('linktypes', m, Type)
         return m
 
+    def removePage(self, pageID):
+        """ Remove page from list of pages """
+
+        if pageID in self.pages:
+            self.pages.pop(pageID)
+            return True
+
+        return False
+
     def addPage(self, link):
         hooks = self.Hooking.getAllHooks("onAddPage")
         data = False
@@ -217,8 +226,16 @@ class nbnotify:
                     break
 
         if type(data).__name__ == "dict":
+
+            # default values
+            if not "data" in data:
+                data['data'] = False
+
+            if not "dontDownload" in data:
+                data['dontDownload'] = False
+
             try:
-                self.pages[str(data['id'])] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain']}
+                self.pages[str(data['id'])] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload']}
                 self.Logging.output("Adding "+link, "", False)
             except Exception as e:
                 buffer = StringIO()
@@ -240,6 +257,8 @@ class nbnotify:
         self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id, template])
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
+    def notifyNewData(self, data, title='', icon='', pageID=''):
+        self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNewData"), [data, title, pageID, icon])
 
     def disablePage(self, pageID, reason=''):
         self.disabledPages[pageID] = reason
@@ -284,7 +303,11 @@ class nbnotify:
             self.Logging.output(self.pages[pageID]['link']+" was disabled because of errors.")
             return False
 
-        data = self.downloadPage(pageID)
+        # twitter etc. throught API support
+        if self.pages[pageID]['dontDownload'] == True:
+            data = self.pages[pageID]['data']
+        else:
+            data = self.downloadPage(pageID)
 
         if self.checkSum(data, pageID) == False:
             return self.checkComments(pageID, data)
