@@ -39,13 +39,18 @@ class nbnotify:
         return "'" + s.replace("'", "'\\''") + "'"
 
     def configSetKey(self, Section, Option, Value):
+        """ Set configuration key """
+
         if not Section in self.Config:
             self.Config[Section] = dict()
 
         self.Config[Section][Option] = str(Value)
 
     def saveConfiguration(self):
+        """ Save configuration to file """
+
         Output = ""
+        r = False
 
         # saving settings to file
         for Section in self.Config:
@@ -61,10 +66,13 @@ class nbnotify:
             Handler = open(self.configDir+"/config", "wb")
             Handler.write(Output)
             Handler.close()
+            r = True
         except Exception as e:
             print("Cannot save configuration to file "+self.configDir+"/config")
+            r = False
 
         self.configTime = os.path.getmtime(self.configDir+"/config")
+        return r
 
     def loadConfig(self):
         """ Parsing configuration ini file """
@@ -128,6 +136,7 @@ class nbnotify:
               False - when value of variable is "false" or "False" or just False
               string value - value of variable
         """
+
         try:
             cfg = self.Config[Section][Key]
             if str(cfg).lower() == "false":
@@ -237,6 +246,7 @@ class nbnotify:
             try:
                 self.pages[str(data['id'])] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload']}
                 self.Logging.output("Adding "+link, "", False)
+                return True
             except Exception as e:
                 buffer = StringIO()
                 traceback.print_exc(file=buffer)
@@ -254,6 +264,8 @@ class nbnotify:
 
 
     def notifyNew(self, pageID, id, template="%username% skomentował \"%title%\""):
+        """ Create new notification from data """
+
         self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id, template])
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
@@ -404,12 +416,12 @@ class nbnotify:
 
                 continue
             except ValueError:
-                self.togglePlugin(False, Plugin, 'activate')
+                self.togglePlugin(Plugin, 'activate')
 
         # add missing plugins
         [self.pluginsList.append(k) for k in self.plugins if k not in self.pluginsList]
 
-    def togglePlugin(self, x, Plugin, Action, liststore=None):
+    def togglePlugin(self, Plugin, Action):
         if Action == 'activate':
             self.Logging.output("Activating "+Plugin, "debug", True)
 

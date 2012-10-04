@@ -6,7 +6,7 @@
 		<platform>Windows</platform>
 	</platforms>
 
-	<version>0.5.4</version>
+	<version>0.5.5</version>
 	<mirrors>
 		<mirror>git://github.com/webnull/nbnotify.git</mirror>
 	</mirrors>

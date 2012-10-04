@@ -24,6 +24,8 @@ class PluginMain(libnbnotify.Plugin):
 
         self._libnotifySend(data, title, icon)
 
+        return a
+
 
     def notifySend(self, a):
         pageID = a[0]
@@ -36,6 +38,8 @@ class PluginMain(libnbnotify.Plugin):
         self._libnotifySend(self._stripHTML(self.app.pages[pageID]['comments'][id]['content'].replace("<br/>", "\n")), content, self.app.pages[pageID]['comments'][id]['avatar'])
 
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
+
+        return a
 
     def _stripHTML(self, html):
         soup = BeautifulSoup(html)
