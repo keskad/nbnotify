@@ -116,7 +116,7 @@ class PluginMain(libnbnotify.Plugin):
         def checkComments(self, pageID, data=''):
             """ Parse all comments """
 
-            if pageID[0:6] == "dp_rss":
+            if self.app.pages[pageID]['id'][0:6] == "dp_rss":
                 return self.checkRSS(pageID, data)
 
             soup = BeautifulSoup.BeautifulSoup(data)

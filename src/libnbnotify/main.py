@@ -46,6 +46,11 @@ class nbnotify:
 
         self.Config[Section][Option] = str(Value)
 
+        return True
+
+    def configRemoveKey(self, Section, Option):
+        return self.Config[Section].pop(Option)
+
     def saveConfiguration(self):
         """ Save configuration to file """
 
@@ -200,16 +205,20 @@ class nbnotify:
     def removePage(self, pageID):
         """ Remove page from list of pages """
 
-        if pageID in self.pages:
-            self.pages.pop(pageID)
+        m = hashlib.md5(pageID).hexdigest()
+
+        if m in self.pages:
+            self.pages.pop(m)
+            self.configRemoveKey("links", m)
             return True
 
         return False
 
     def addPage(self, link):
         hooks = self.Hooking.getAllHooks("onAddPage")
+        m = hashlib.md5(link).hexdigest()
         data = False
-        staticPlugin = str(self.configGetKey("linktypes", hashlib.md5(link).hexdigest()))
+        staticPlugin = str(self.configGetKey("linktypes", m))
         breakHere = False
 
         # search for plugin that handles link correctly
@@ -243,9 +252,16 @@ class nbnotify:
             if not "dontDownload" in data:
                 data['dontDownload'] = False
 
+            if not "id" in data:
+                data['id'] = False
+
             try:
-                self.pages[str(data['id'])] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload']}
+                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id']}
                 self.Logging.output("Adding "+link, "", False)
+
+                if str(self.configGetKey("links", m)) == "False":
+                    self.configSetKey("links", m, link)
+
                 return True
             except Exception as e:
                 buffer = StringIO()
@@ -269,8 +285,12 @@ class nbnotify:
         self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNew"), [pageID, id, template])
         #os.system('/usr/bin/notify-send "<b>'+self.shellquote(self.pages[pageID]['comments'][id]['username'])+'</b> skomentował wpis '+self.shellquote(self.pages[pageID]['title'].replace("!", "."))+':" \"'+self.shellquote(self.pages[pageID]['comments'][id]['content']).replace("!", ".")+'\" -i '+self.self.pages[pageID]['comments'][id]['avatar']+' -u low -a dpnotify')
 
+        return True
+
     def notifyNewData(self, data, title='', icon='', pageID=''):
         self.Hooking.executeHooks(self.Hooking.getAllHooks("onNotifyNewData"), [data, title, pageID, icon])
+
+        return True
 
     def disablePage(self, pageID, reason=''):
         self.disabledPages[pageID] = reason
@@ -372,8 +392,11 @@ class nbnotify:
                 if self.configCheckChanges() == True:
                     t = self.getT()
 
-                for pageID in self.pages:
-                    self.checkPage(pageID)
+                try:
+                    for pageID in self.pages:
+                        self.checkPage(pageID)
+                except RuntimeError:
+                    pass
 
                 time.sleep(t)
         except KeyboardInterrupt:

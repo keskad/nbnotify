@@ -8,6 +8,11 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+05.10.2012 (v.0.6) <webnull.www@gmail.com>:
+    + configRemoveKey in main library
+    + getAllEntries in sockets API
+    * Fixed "RuntimeError: dictionary changed size during iteration"
+
 04.10.2012 (v.0.5.5) <webnull.www@gmail.com>:
     + bus plugin allows remote control over HTTP Server
 

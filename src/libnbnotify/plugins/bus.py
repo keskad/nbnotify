@@ -14,6 +14,11 @@ class SocketInterface(asyncore.dispatcher_with_send):
 
     app = None
 
+    def getAllEntries(self, data=''):
+        """ Returns all links from database """
+
+        return self.app.configGetSection('links')
+
     def notifyNewData(self, data):
         """ Create new notification from data """
 
