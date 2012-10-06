@@ -14,6 +14,14 @@ class SocketInterface(asyncore.dispatcher_with_send):
 
     app = None
 
+    def ping(self, data=''):
+        return "pong";
+
+    def getConfigAndEntries(self, data=''):
+        """ Returns all configuration variables and links """
+
+        return [self.app.configGetSection('links'), self.app.Config]
+
     def getAllEntries(self, data=''):
         """ Returns all links from database """
 

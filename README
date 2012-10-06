@@ -8,6 +8,10 @@ To install this app use:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+06.10.2012 (v.0.6.1) <webnull.www@gmail.com>:
+    + getConfigAndEntries in sockets API
+    * Improved stability, some RuntimeErrors, KeyErrors fixed
+
 05.10.2012 (v.0.6) <webnull.www@gmail.com>:
     + configRemoveKey in main library
     + getAllEntries in sockets API

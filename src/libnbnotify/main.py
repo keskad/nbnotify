@@ -331,19 +331,27 @@ class nbnotify:
     def checkPage(self, pageID):
         """ Check if page was modified """
 
+        if not pageID in self.pages:
+            return False
+
         if pageID in self.disabledPages:
             self.Logging.output(self.pages[pageID]['link']+" was disabled because of errors.")
             return False
 
-        # twitter etc. throught API support
-        if self.pages[pageID]['dontDownload'] == True:
-            data = self.pages[pageID]['data']
-        else:
-            data = self.downloadPage(pageID)
 
-        if self.checkSum(data, pageID) == False:
-            return self.checkComments(pageID, data)
-        else:
+        try:
+            # twitter etc. throught API support
+            if self.pages[pageID]['dontDownload'] == True:
+                data = self.pages[pageID]['data']
+            else:
+                data = self.downloadPage(pageID)
+
+            if self.checkSum(data, pageID) == False:
+                return self.checkComments(pageID, data)
+            else:
+                return False
+        except KeyError:
+            self.Logging.output("Page removed while parsing by extension, propably removed from external application using API")
             return False
 
     def addPagesFromConfig(self):
