@@ -189,6 +189,10 @@ class nbnotify:
 
     def checkSum(self, data, pageID):
         # check md5 sums
+
+        if data == False:
+            return False
+
         m = hashlib.md5(data).digest()
 
         if m == self.pages[pageID]['hash']:
@@ -214,7 +218,19 @@ class nbnotify:
 
         return False
 
+    def stripLink(self, link):
+        """ Removes http/https and www """
+
+        return link.replace("http://", "").replace("https://", "").replace("www.", "")
+
     def addPage(self, link):
+        strippedLink = self.stripLink(link)
+
+        for k in self.pages:
+            if self.pages[k]['link_id'] == link:
+                self.Logging.output("Skipping adding "+strippedLink+" - duplicate.", "debug", False)
+                return False
+
         hooks = self.Hooking.getAllHooks("onAddPage")
         m = hashlib.md5(link).hexdigest()
         data = False
@@ -256,8 +272,8 @@ class nbnotify:
                 data['id'] = False
 
             try:
-                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id']}
-                self.Logging.output("Adding "+link, "", False)
+                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id']}
+                self.Logging.output("Adding "+strippedLink, "", False)
 
                 if str(self.configGetKey("links", m)) == "False":
                     self.configSetKey("links", m, link)
@@ -266,10 +282,10 @@ class nbnotify:
             except Exception as e:
                 buffer = StringIO()
                 traceback.print_exc(file=buffer)
-                self.Logging.output("Cannot add "+link+", exception: "+str(buffer.getvalue()), "warning", True, skipDate=True)
+                self.Logging.output("Cannot add "+strippedLink+", exception: "+str(buffer.getvalue()), "warning", True, skipDate=True)
 
         else:
-            self.Logging.output("No any suitable extension supporting link format \""+link+"\" found", "warning", True)
+            self.Logging.output("No any suitable extension supporting link format \""+strippedLink+"\" found", "warning", True)
             return False
 
     def addCommentToDB(self, pageID, id, localAvatar):
