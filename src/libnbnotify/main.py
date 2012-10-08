@@ -4,6 +4,7 @@ import traceback
 import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
 import sqlite3
 from distutils.sysconfig import get_python_lib
+import socket
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -31,6 +32,7 @@ class nbnotify:
     disabledPlugins = list()
     plugins=dict()
     pluginsList=list() # ordered list
+    headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain", "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.79 Safari/537.4", "Accept-charset": "ISO-8859-2,utf-8;q=0.7,*;q=0.3", "Accept-language": "en-US,en;q=0.8,pl;q=0.6"}
 
     def __init__(self):
         self.Logging = libnbnotify.Logging(self)
@@ -151,7 +153,7 @@ class nbnotify:
         except KeyError:
             return False
 
-    def httpGET(self, domain, url):
+    def httpGET(self, domain, url, secure=False):
         """ Do a HTTP GET request, handle errors """
 
         if url[0:1] != "/":
@@ -161,7 +163,7 @@ class nbnotify:
 
         try:
             connection = httplib.HTTPConnection(domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
-            connection.request("GET", str(url))
+            connection.request("GET", str(url), headers=self.headers)
             response = connection.getresponse()
             status = str(response.status)
             data = response.read()
@@ -170,8 +172,21 @@ class nbnotify:
 
             if len(data) == 0 and status == "301" :
                 self.Logging.output("Adding \"www\" subdomain to url", "warning", True)
-                connection = httplib.HTTPConnection("www."+domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
-                connection.request("GET", str(url))
+
+                try:
+                    socket.ssl
+                except Exception as e:
+                    self.Logging.output("SSL is not supported by socket library, switching back to unsecure http connection for link "+str(url), "debug", True)
+                    secure = False # disable secure connection if SSL is not supported
+
+                # support SSL
+                if secure == True:
+                    connection = httplib.HTTPSConnection("www."+domain, 443, timeout=int(self.configGetKey("connection", "timeout")))
+                else:
+                    connection = httplib.HTTPConnection("www."+domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
+
+                
+                connection.request("GET", str(url), headers=self.headersz)
                 response = connection.getresponse()
                 status = str(response.status)
                 data = response.read()
@@ -185,7 +200,12 @@ class nbnotify:
     def downloadPage(self, pageID):
         """ Download page and check md5 sum """
 
-        return self.httpGET(self.pages[pageID]['domain'], str(self.pages[pageID]['link']))
+        secure = False # SSL
+
+        if self.pages[pageID]['secure'] == True:
+            secure = True
+
+        return self.httpGET(self.pages[pageID]['domain'], str(self.pages[pageID]['link']), secure)
 
     def checkSum(self, data, pageID):
         # check md5 sums
@@ -271,8 +291,11 @@ class nbnotify:
             if not "id" in data:
                 data['id'] = False
 
+            if not "secure" in data:
+                data['secure'] = False
+
             try:
-                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id']}
+                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id'], 'secure': data['secure']}
                 self.Logging.output("Adding "+strippedLink, "", False)
 
                 if str(self.configGetKey("links", m)) == "False":

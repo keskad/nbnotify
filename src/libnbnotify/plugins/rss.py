@@ -19,7 +19,7 @@ class PluginMain(libnbnotify.Plugin):
             # this plugin works only if link has specified static plugin
             if data['staticPlugin'] == self.name:
                 domain = urlparse.urlparse(data['link']).hostname
-                link = data['link'].replace("http://"+domain, "")
+                link = data['link'].replace("http://"+domain, "").replace("https://"+domain, "")
                 id = "rss_"+hashlib.md5(data['link']).hexdigest()
                 fixedUrl = self.app.configGetKey("rss_fixurl", id)
 
@@ -29,7 +29,7 @@ class PluginMain(libnbnotify.Plugin):
 
                     try:
                         connection = httplib.HTTPConnection(domain, 80, timeout=int(self.app.configGetKey("connection", "timeout")))
-                        connection.request("GET", link)
+                        connection.request("GET", link, headers=self.app.headers)
                         response = connection.getresponse()
 
                         if str(response.status) != "200":
@@ -74,7 +74,9 @@ class PluginMain(libnbnotify.Plugin):
                 if str(a) == "False":
                     self.Logging.output("No icon file found for this RSS resource, use nbnotify --force-new --config=rssicons:"+str(id)+" --value=path-to-icon-file to set icon file", "debug", False)
 
-                return {'id': id, 'link': link, 'extension': self, 'domain': domain}
+                print("Domain: "+link)
+
+                return {'id': id, 'link': link, 'extension': self, 'domain': domain, 'ssl': True}
 
         def checkComments(self, pageID, data=''):
             soup = BeautifulSoup.BeautifulStoneSoup(data)
