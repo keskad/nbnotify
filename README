@@ -10,6 +10,9 @@ Licence: LGPLv3
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+10.10.2012 (v.0.6.4) <webnull.www@gmail.com>:
+    + lastfm support (watching last played tracks)
+
 08.10.2012 (v.0.6.3) <webnull.www@gmail.com>:
     + Added support for SSL connections (if sockets was compiled with ssl) 
 
