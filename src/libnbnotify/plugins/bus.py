@@ -20,7 +20,7 @@ class SocketInterface(asyncore.dispatcher_with_send):
     def getConfigAndEntries(self, data=''):
         """ Returns all configuration variables and links """
 
-        return [self.app.configGetSection('links'), self.app.Config]
+        return [self.app.configGetSection('links'), self.app.Config.Config]
 
     def getAllEntries(self, data=''):
         """ Returns all links from database """

@@ -2,6 +2,8 @@ from collections import defaultdict
 import inspect, logging, traceback, os
 from time import strftime, localtime
 from StringIO import StringIO
+import hashlib
+import urlparse
 
 class Logging:
     logger = None
@@ -145,4 +147,29 @@ class Plugin:
     def __init__(self, app=None):
         self.app = app
         self.Logging = app.Logging
+
+    def getAvatar(self, avatar):
+        avatar = avatar.replace('\/', '/')
+
+        m = hashlib.md5(avatar).hexdigest()
+
+        if ".jpg" in avatar:
+            icon = self.app.iconCacheDir+"/"+m+".jpg"
+        else:
+            icon = self.app.iconCacheDir+"/"+m+".png"
+
+        if not os.path.isfile(icon):
+            parsedurl = urlparse.urlparse(avatar)
+            data = self.app.httpGET(parsedurl.netloc, parsedurl.path)
+
+            if data != False:
+                w = open(icon, "wb")
+                w.write(data)
+                w.close()
+                self.Logging.output("Notify icon saved: "+avatar, "debug", False)
+            else:
+                self.Logging.output("Cannot notify icon: "+avatar, "warning", True)
+                return ""
+        
+        return icon
 

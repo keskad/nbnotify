@@ -74,11 +74,12 @@ class PluginMain(libnbnotify.Plugin):
                 if str(a) == "False":
                     self.Logging.output("No icon file found for this RSS resource, use nbnotify --force-new --config=rssicons:"+str(id)+" --value=path-to-icon-file to set icon file", "debug", False)
 
-                print("Domain: "+link)
-
                 return {'id': id, 'link': link, 'extension': self, 'domain': domain, 'ssl': True}
 
         def checkComments(self, pageID, data=''):
+            if data == "":
+                return False
+
             soup = BeautifulSoup.BeautifulStoneSoup(data)
             items = soup.findAll('item')
             domain = urlparse.urlparse(soup.find("link").string).hostname
@@ -92,6 +93,16 @@ class PluginMain(libnbnotify.Plugin):
             for item in items:
                 title = item.find("title").string
                 content = item.find("description").string
+
+                # try to get any image from content to display as notification icon
+                if "<img src" in content and str(a) == "False":
+                    try:
+                        t = BeautifulSoup.BeautifulSoup(content)
+                        t = t.findAll("img")
+                        localAvatar = self.getAvatar(t[0]['src'])
+                    except Exception:
+                        localAvatar = ""
+                        pass
 
                 id = hashlib.md5(title).hexdigest()
 

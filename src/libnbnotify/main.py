@@ -1,5 +1,6 @@
 #-*- coding: utf-8 -*-
 import libnbnotify
+import libnbnotify.config
 import traceback
 import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
 import sqlite3
@@ -18,11 +19,9 @@ else:
 
 class nbnotify:
     Config = dict()
-    #Config['connection'] = dict()
-    #Config['connection']['timeout'] = 5 # 5 seconds
     iconCacheDir = os.path.expanduser("~/.nbnotify/cache")
     configDir = os.path.expanduser("~/.nbnotify")
-    configTime = None # config last modification time
+    configFile = "config"
     db = None
     pages = dict()
     disabledPages = dict() # Page => Reason
@@ -34,124 +33,39 @@ class nbnotify:
     pluginsList=list() # ordered list
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain", "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.79 Safari/537.4", "Accept-charset": "ISO-8859-2,utf-8;q=0.7,*;q=0.3", "Accept-language": "en-US,en;q=0.8,pl;q=0.6"}
 
+
     def __init__(self):
         self.Logging = libnbnotify.Logging(self)
+        self.Config = libnbnotify.config.Config(self, self.configDir+"/"+self.configFile)
+
+        # Config bindings
+        self.configGetKey = self.Config.getKey
+        self.configSetKey = self.Config.setKey
+        self.configGetSection = self.Config.getSection
+        self.configRemoveKey = self.Config.removeKey
+        self.saveConfiguration = self.Config.save
+        self.configCheckChanges = self.Config.checkChanges
 
     def shellquote(self, s):
         return "'" + s.replace("'", "'\\''") + "'"
 
-    def configSetKey(self, Section, Option, Value):
-        """ Set configuration key """
-
-        if not Section in self.Config:
-            self.Config[Section] = dict()
-
-        self.Config[Section][Option] = str(Value)
-
-        return True
-
-    def configRemoveKey(self, Section, Option):
-        return self.Config[Section].pop(Option)
-
-    def saveConfiguration(self):
-        """ Save configuration to file """
-
-        Output = ""
-        r = False
-
-        # saving settings to file
-        for Section in self.Config:
-            Output += "["+str(Section)+"]\n"
-
-            for Option in self.Config[Section]:
-                Output += str(Option)+" = "+str(self.Config[Section][Option])+"\n"
-
-            Output += "\n"
-
-        try:
-            self.Logging.output("Saving to "+self.configDir+"/config", "debug", True)
-            Handler = open(self.configDir+"/config", "wb")
-            Handler.write(Output)
-            Handler.close()
-            r = True
-        except Exception as e:
-            print("Cannot save configuration to file "+self.configDir+"/config")
-            r = False
-
-        self.configTime = os.path.getmtime(self.configDir+"/config")
-        return r
-
     def loadConfig(self):
         """ Parsing configuration ini file """
+
+        configPath = self.configDir + "/" +self.configFile
 
         if not os.path.isdir(self.configDir):
             try:
                 os.mkdir(self.configDir)
             except Exception:
-                print("Cannot create "+self.configDir+" directory, please check your permissions")
-
-        configPath = os.path.expanduser(self.configDir+"/config")
+                print("Cannot create "+configPath+" directory, please check your permissions")
 
         if not os.path.isfile(configPath):
             w = open(configPath, "w")
             w.write("[connection]\ntimeout = 60\n\n[global]\nchecktime = 60")
             w.close()
 
-        if os.path.isfile(configPath):
-            Parser = configparser.ConfigParser()
-            try:
-                Parser.read(configPath)
-            except Exception as e:
-                self.Logging.output("Error parsing configuration file from "+self.configDir+"/config, error: "+str(e), "critical", True)
-                sys.exit(os.EX_CONFIG)
-
-            # all configuration sections
-            Sections = Parser.sections()
-
-            for Section in Sections:
-                Options = Parser.options(Section)
-                self.Config[Section] = dict()
-
-                # and configuration variables inside of sections
-                for Option in Options:
-                    self.Config[Section][Option] = Parser.get(Section, Option)
-
-        self.configTime = os.path.getmtime(self.configDir+"/config")
-
-    def configGetSection(self, Section):
-        """ Returns section as dictionary 
-
-            Args:
-              Section - name of section of ini file ([section] header)
-
-            Returns:
-              Dictionary - on success
-              False - on false
-
-        """
-        return self.Config.get(Section, False)
-
-    def configGetKey(self, Section, Key):
-        """ Returns value of Section->Value configuration variable
-
-            Args:
-              Section - name of section of ini file ([section] header)
-              Key - variable name
-
-            Returns:
-              False - when section or key does not exists
-              False - when value of variable is "false" or "False" or just False
-              string value - value of variable
-        """
-
-        try:
-            cfg = self.Config[Section][Key]
-            if str(cfg).lower() == "false":
-                return False
-            else:
-                return cfg
-        except KeyError:
-            return False
+        self.Config.loadConfig()
 
     def httpGET(self, domain, url, secure=False):
         """ Do a HTTP GET request, handle errors """
@@ -295,7 +209,7 @@ class nbnotify:
                 data['secure'] = False
 
             try:
-                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id'], 'secure': data['secure']}
+                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id'], 'secure': data['secure'], 'exceptions': 0}
                 self.Logging.output("Adding "+strippedLink, "", False)
 
                 if str(self.configGetKey("links", m)) == "False":
@@ -332,9 +246,22 @@ class nbnotify:
         return True
 
     def disablePage(self, pageID, reason=''):
-        self.disabledPages[pageID] = reason
-        self.Logging.output("Disabling page "+pageID+" due to found errors.")
-        return True
+        try:
+            max_parse_errors = int(self.Config.getKey("global", "max_parse_errors"))
+            max_parse_errors = 0
+        except ValueError:
+            self.Config.setKey("global", "max_parse_errors", "5")
+            max_parse_errors = 0
+
+        if int(self.pages[pageID]['exceptions']) == int(max_parse_errors):
+            self.disabledPages[pageID] = reason
+            self.Logging.output("Disabling page "+pageID+" due to found errors. "+reason, "warning", True)
+            return True
+        else:
+            self.pages[pageID]['exceptions'] = self.pages[pageID]['exceptions'] + 1
+            self.Logging.output(pageID+" errors: "+str(self.pages[pageID]['exceptions']), "warning", True)
+            return False
+
 
     def checkComments(self, pageID, data=''):
         """ Parse all comments """
@@ -342,6 +269,7 @@ class nbnotify:
         try:
             extension = self.pages[pageID]['extension']
             extension.checkComments(pageID, data)
+            self.pages[pageID]['exceptions'] = 0
         except Exception as e:
             stack = StringIO()
             traceback.print_exc(file=stack)
@@ -406,20 +334,13 @@ class nbnotify:
 
         for page in section:
             self.addPage(section[page])
-
-    def configCheckChanges(self):
-        if os.path.getmtime(self.configDir+"/config") != self.configTime:
-            self.Logging.output("Reloading configuration...", "debug", False)
-            self.loadConfig()
-            self.addPagesFromConfig()
-            return True
             
     def getT(self):
         try:
             t = int(self.configGetKey("global", "checktime"))
         except ValueError:
             self.Logging.output("Invalid [global]->checktime value, must be integer not a string", "warning", True)
-            t = 30
+            t = 120
 
         self.Logging.output("t = "+str(t), "debug", False)
 
