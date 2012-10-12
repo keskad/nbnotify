@@ -1,5 +1,6 @@
 import sys
 import os
+import copy
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -15,6 +16,7 @@ class Config:
     def __init__(self, app, file):
         self.file = file
         self.app = app
+        self.Config = dict()
 
     def __str__(self):
         return str(self.Config)
@@ -30,10 +32,29 @@ class Config:
 
         return True
 
+    def renameAllKeys(self, key, newName):
+        if key == newName:
+            return True
+
+        c = copy.deepcopy(dict(self.Config))
+
+        for s in c:
+            for k in c[s]:
+                if k == key:
+                    value = self.Config[s][k]
+
+                    self.Config[s].pop(k)
+                    self.Config[s][newName] = value
+        return True
+
 
     def removeKey(self, Section, Option):
-        return self.Config[Section].pop(Option)
-
+        try:
+            return self.Config[Section].pop(Option)
+        except KeyError:
+            self.app.Logging.output("KeyError in "+Section+"->"+Option, "debug", False)
+            return False
+    
 
     def getSection(self, Section):
         """ Returns section as dictionary 
@@ -109,6 +130,14 @@ class Config:
 
     def loadConfig(self):
         """ Parsing configuration ini file """
+
+        self.app.Logging.output("Parsing "+self.file, "debug", False)
+
+        if not os.path.isfile(self.file):
+            self.app.Logging.output("Creating new "+self.file, "debug", False)
+            w = open(self.file, "w")
+            w.write("")
+            w.close()
 
         if os.path.isfile(self.file):
             Parser = configparser.ConfigParser()

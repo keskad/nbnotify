@@ -2,6 +2,7 @@ nbnotify - Nice Blog Notifications
 ========
 
 To install this app use:
+  ./setup.py build
   ./setup.py install
   ./setup.py install_data
 
@@ -10,6 +11,13 @@ Licence: LGPLv3
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+12.10.2012 (v.0.6.6) <webnull.www@gmail.com>:
+    + Added support for passwords storing (app.Passwords)
+    + main.httpGET supports cookies
+    + cookie attribute in plugins
+    + Configuration is now saved on application exit via ctrl+c (KeyboardInterrupt)
+    + photoblog.pl notifications support throught fbl extension (in developement stage, difficult handling via console, needs browser extension to work)
+
 11.10.2012 (v.0.6.5) <webnull.www@gmail.com>:
     + RSS icons are now automaticaly detected from HTML code if present
     * Moved configuration management code to module

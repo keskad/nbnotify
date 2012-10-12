@@ -19,6 +19,12 @@ else:
 
 class nbnotify:
     Config = dict()
+    #Passwords = dict()
+
+    # queue
+    configQueue = dict()
+    configQueue['links'] = dict()
+
     iconCacheDir = os.path.expanduser("~/.nbnotify/cache")
     configDir = os.path.expanduser("~/.nbnotify")
     configFile = "config"
@@ -37,6 +43,7 @@ class nbnotify:
     def __init__(self):
         self.Logging = libnbnotify.Logging(self)
         self.Config = libnbnotify.config.Config(self, self.configDir+"/"+self.configFile)
+        self.loadPasswords()
 
         # Config bindings
         self.configGetKey = self.Config.getKey
@@ -46,8 +53,20 @@ class nbnotify:
         self.saveConfiguration = self.Config.save
         self.configCheckChanges = self.Config.checkChanges
 
+
     def shellquote(self, s):
         return "'" + s.replace("'", "'\\''") + "'"
+
+    def loadPasswords(self):
+        self.Passwords = libnbnotify.config.Config(self, self.configDir+"/auth")
+
+        if not os.path.isfile(self.configDir+"/auth"):
+            w = open(self.configDir+"/auth", "w")
+            w.write("")
+            w.close()
+
+        self.Passwords.loadConfig()
+
 
     def loadConfig(self):
         """ Parsing configuration ini file """
@@ -67,7 +86,8 @@ class nbnotify:
 
         self.Config.loadConfig()
 
-    def httpGET(self, domain, url, secure=False):
+
+    def httpGET(self, domain, url, secure=False, cookies=''):
         """ Do a HTTP GET request, handle errors """
 
         if url[0:1] != "/":
@@ -75,9 +95,15 @@ class nbnotify:
 
         data = False
 
+        h = self.headers
+
+        # add cookie header
+        if cookies != '':
+            h['Cookie'] = cookies
+
         try:
             connection = httplib.HTTPConnection(domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
-            connection.request("GET", str(url), headers=self.headers)
+            connection.request("GET", str(url), headers=h)
             response = connection.getresponse()
             status = str(response.status)
             data = response.read()
@@ -99,8 +125,7 @@ class nbnotify:
                 else:
                     connection = httplib.HTTPConnection("www."+domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
 
-                
-                connection.request("GET", str(url), headers=self.headersz)
+                connection.request("GET", str(url), headers=h)
                 response = connection.getresponse()
                 status = str(response.status)
                 data = response.read()
@@ -111,15 +136,18 @@ class nbnotify:
 
         return data
 
+
+
     def downloadPage(self, pageID):
         """ Download page and check md5 sum """
 
-        secure = False # SSL
+        s = False # SSL
 
         if self.pages[pageID]['secure'] == True:
-            secure = True
+            s = True
 
-        return self.httpGET(self.pages[pageID]['domain'], str(self.pages[pageID]['link']), secure)
+        return self.httpGET(self.pages[pageID]['domain'], str(self.pages[pageID]['link']), secure=s, cookies=str(self.pages[pageID]['cookies']))
+
 
     def checkSum(self, data, pageID):
         # check md5 sums
@@ -134,6 +162,7 @@ class nbnotify:
 
         self.pages[pageID]['hash'] = m
         return False
+
 
     def setType(self, link, Type):
         m = hashlib.md5(link).hexdigest()
@@ -157,7 +186,13 @@ class nbnotify:
 
         return link.replace("http://", "").replace("https://", "").replace("www.", "")
 
-    def addPage(self, link):
+
+
+    def addPage(self, link, editingConfig=False):
+        m = hashlib.md5(link).hexdigest()
+        originalLink = link
+        oldM = m
+
         strippedLink = self.stripLink(link)
 
         for k in self.pages:
@@ -166,7 +201,6 @@ class nbnotify:
                 return False
 
         hooks = self.Hooking.getAllHooks("onAddPage")
-        m = hashlib.md5(link).hexdigest()
         data = False
         staticPlugin = str(self.configGetKey("linktypes", m))
         breakHere = False
@@ -208,12 +242,27 @@ class nbnotify:
             if not "secure" in data:
                 data['secure'] = False
 
-            try:
-                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id'], 'secure': data['secure'], 'exceptions': 0}
-                self.Logging.output("Adding "+strippedLink, "", False)
+            if not "cookies" in data:
+                data['cookies'] = ""
 
-                if str(self.configGetKey("links", m)) == "False":
-                    self.configSetKey("links", m, link)
+            if not "reallink" in data:
+                data['reallink'] = strippedLink
+            else:
+                m = hashlib.md5(data['reallink']).hexdigest()
+                link = data['reallink']
+
+            try:
+                self.pages[str(m)] = {'hash': '', 'link': data['link'], 'link_id': strippedLink, 'comments': dict(), 'extension': data['extension'], 'domain': data['domain'], 'data': data['data'], 'dontDownload': data['dontDownload'], 'id': data['id'], 'secure': data['secure'], 'exceptions': 0, 'cookies': data['cookies'], 'reallink': data['reallink']}
+
+                if len(strippedLink) > 40:
+                    strippedLink = strippedLink[0:40]+"(...)"
+
+                self.Logging.output("Adding "+link, "debug", False)
+
+                # doesnt exists or changed id
+                if str(self.configGetKey("links", oldM)) == "False" or m != oldM:
+                    self.configSetKey("links", oldM, link)
+                    self.Config.renameAllKeys(oldM, m)
 
                 return True
             except Exception as e:
@@ -224,6 +273,7 @@ class nbnotify:
         else:
             self.Logging.output("No any suitable extension supporting link format \""+strippedLink+"\" found", "warning", True)
             return False
+
 
     def addCommentToDB(self, pageID, id, localAvatar):
         try:
@@ -322,7 +372,11 @@ class nbnotify:
             return False
 
     def addPagesFromConfig(self):
-        section = self.configGetSection('links')
+
+        try:
+            section = dict(self.configGetSection('links'))
+        except TypeError:
+            section = False
 
         if section == False:
             self.Logging.output("No pages to scan found, use --add [link] to add new blog entries.", "", False)
@@ -333,7 +387,9 @@ class nbnotify:
             sys.exit(0)
 
         for page in section:
-            self.addPage(section[page])
+            self.addPage(section[page], editingConfig=False)
+
+        #self.configQueueExecute()
             
     def getT(self):
         try:
@@ -368,6 +424,7 @@ class nbnotify:
 
                 time.sleep(t)
         except KeyboardInterrupt:
+            self.Config.save()
             print("Got keyboard interrupt, exiting.")
             sys.exit(0)
 

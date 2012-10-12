@@ -20,7 +20,7 @@ class PluginMain(libnbnotify.Plugin):
             if data['staticPlugin'] == self.name:
                 domain = urlparse.urlparse(data['link']).hostname
                 link = data['link'].replace("http://"+domain, "").replace("https://"+domain, "")
-                id = "rss_"+hashlib.md5(data['link']).hexdigest()
+                id = hashlib.md5(data['link']).hexdigest()
                 fixedUrl = self.app.configGetKey("rss_fixurl", id)
 
                 ##### HANDLING 301 MOVED
