@@ -11,6 +11,10 @@ Licence: LGPLv3
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+13.10.2012 (v.0.6.7) <webnull.www@gmail.com>:
+    + Custom host & port settings for bus server (please note - it's not secure to listen on public IP adress because there is no encryption implmemented yet. But if you are behind NAT/firewall it should be secure to use remote control in lan)
+    * Shell command --append, -a is now using addPage instead of manually modifying configuration file
+
 12.10.2012 (v.0.6.6) <webnull.www@gmail.com>:
     + Added support for passwords storing (app.Passwords)
     + main.httpGET supports cookies

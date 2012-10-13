@@ -18,6 +18,7 @@ else:
 
 
 class nbnotify:
+    cli = False
     Config = dict()
     #Passwords = dict()
 
