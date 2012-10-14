@@ -263,11 +263,15 @@ class PluginMain(libnbnotify.Plugin):
             return False
 
     def startServer(self):
-        self.app.Logging.output("Socket server is running on "+str(self.host)+":"+str(self.port), "debug", False)
-        self.bus = SocketServer(self.host, self.port, self.app)
-        self.thread = Thread(target=asyncore.loop)
-        self.thread.setDaemon(True)
-        self.thread.start()
+        try:
+            self.app.Logging.output("Socket server is running on "+str(self.host)+":"+str(self.port), "debug", False)
+            self.bus = SocketServer(self.host, self.port, self.app)
+            self.thread = Thread(target=asyncore.loop)
+            self.thread.setDaemon(True)
+            self.thread.start()
+        except Exception as e:
+            self.app.Logging.output("Only one instance of nbnotify is allowed, "+str(e), "debug", False)
+            sys.exit(0)
 
 
 
