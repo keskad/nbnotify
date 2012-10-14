@@ -89,11 +89,11 @@ class PluginMain(libnbnotify.Plugin):
             isNew = False
 
             for item in items:
-                title = item.find("title").string
-                author = item.find("author").string
-                content = item.find("description").string
+                title = str(item.find("title").string)
+                author = str(item.find("author").string)
+                content = str(item.find("description").string)
 
-                id = hashlib.md5(title).hexdigest()
+                id = hashlib.md5(str(title)).hexdigest()
 
                 if not id in self.app.pages[str(pageID)]['comments']:
                     isNew = True
