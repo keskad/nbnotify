@@ -40,11 +40,11 @@ class PluginMain(libnbnotify.Plugin):
 
 
     def notifySend(self, a):
-        pageID = a[0]
-        id = a[1]
+        pageID = str(a[0])
+        id = str(a[1].encode("utf-8"))
 
         # a[2] - template
-        content = a[2].replace("%username%", self.app.pages[pageID]['comments'][id]['username']).replace("%title%", self.app.pages[pageID]['title'].replace("\n", ""))
+        content = str(a[2].encode("utf-8")).replace("%username%", self.app.pages[pageID]['comments'][id]['username']).replace("%title%", self.app.pages[pageID]['title'].replace("\n", ""))
 
         self.xmpp.send(xmpp.protocol.Message("webnull@ubuntu.pl", content+"\n\n"+self._stripHTML(self.app.pages[pageID]['comments'][id]['content'].replace("<br/>", "\n"))))
 
@@ -60,7 +60,7 @@ class PluginMain(libnbnotify.Plugin):
 
     def _libnotifySend(self, message, title='', icon=''):
         try:
-            self.xmpp.send(xmpp.protocol.Message(str(self.app.Config.getKey("libxmpp", "client_jid")), "## "+title+": \n"+message))
+            self.xmpp.send(xmpp.protocol.Message(str(self.app.Config.getKey("libxmpp", "client_jid")), "## "+str(title.encode("utf-8"))+": \n"+str(message.encode("utf-8"))))
         except Exception as e:
             self.app.Logging.output("Cannot send message to "+str(self.app.Config.getKey("libxmpp", "client_jid"))+", "+str(e), "debug", False)
 
