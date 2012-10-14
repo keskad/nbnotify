@@ -133,12 +133,6 @@ class Config:
 
         self.app.Logging.output("Parsing "+self.file, "debug", False)
 
-        if not os.path.isfile(self.file):
-            self.app.Logging.output("Creating new "+self.file, "debug", False)
-            w = open(self.file, "w")
-            w.write("")
-            w.close()
-
         if os.path.isfile(self.file):
             Parser = configparser.ConfigParser()
             try:

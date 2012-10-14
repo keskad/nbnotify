@@ -10,6 +10,7 @@ def parseArgs(app):
 
     app.db = libnbnotify.database.Database()
     app.loadConfig()
+    app.loadPasswords()
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], "ha:r:lt:p", ["help", "append=", "remove=", 'list', 'daemonize', 'type', 'list-plugins', 'list-types', 'config=', 'value=', 'list-config', 'force-new'])
@@ -138,10 +139,10 @@ def parseArgs(app):
             sys.exit(0)
 
         if o in '--daemonize':
-            if not os.path.isdir("/tmp/nbnotify"):
-                os.system("mkdir /tmp/nbnotify")
+            if not os.path.isdir("/tmp/.nbnotify"):
+                os.system("mkdir /tmp/.nbnotify")
 
-            daemonize(stdout='/tmp/nbnotify/.out', stderr='/tmp/nbnotify/.err')
+            daemonize(stdout='/tmp/.nbnotify/.out', stderr='/tmp/.nbnotify/.err')
 
 
     app.doPluginsLoad()

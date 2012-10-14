@@ -44,7 +44,6 @@ class nbnotify:
     def __init__(self):
         self.Logging = libnbnotify.Logging(self)
         self.Config = libnbnotify.config.Config(self, self.configDir+"/"+self.configFile)
-        self.loadPasswords()
 
         # Config bindings
         self.configGetKey = self.Config.getKey
