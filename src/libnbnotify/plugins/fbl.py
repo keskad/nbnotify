@@ -76,7 +76,7 @@ class PluginMain(libnbnotify.Plugin):
             except Exception:
                 pass
         
-            return str(text)
+            return str(text.encode('utf-8'))
             
            
 
