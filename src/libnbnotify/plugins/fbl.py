@@ -87,7 +87,9 @@ class PluginMain(libnbnotify.Plugin):
             if "wylogowany." in data:
                 return False
 
-            login = self.app.pages[pageID]['reallink'].replace("http://photoblog.pl/mojphotoblog/", "")
+            data = str(data)
+
+            login = str(self.app.pages[pageID]['reallink'].replace("http://photoblog.pl/mojphotoblog/", ""))
             title = "Blog "+login+".fbl.pl"
 
             soup = BeautifulSoup.BeautifulSoup(data)
@@ -111,14 +113,14 @@ class PluginMain(libnbnotify.Plugin):
                 if '<a href="/pro">PRO' in content:
                     continue
 
-                content = self._stripSpaces(self._stripHTML(re.sub(r'\s', ' ', content)))
+                content = self._stripSpaces(self._stripHTML(re.sub(r'\s', ' ', str(content))))
 
-                id = hashlib.md5(content).hexdigest()
+                id = hashlib.md5(str(content)).hexdigest()
 
                 if not id in self.app.pages[str(pageID)]['comments']:
                     self.app.pages[str(pageID)]['title'] = title
-                    self.app.pages[str(pageID)]['comments'][id] = {'username': profile, 'content': content, 'title': title, 'avatar': avatar}
-                    self.app.addCommentToDB(pageID, id, avatar)
+                    self.app.pages[str(pageID)]['comments'][id] = {'username': str(profile), 'content': str(content), 'title': str(title), 'avatar': str(avatar)}
+                    self.app.addCommentToDB(pageID, id, str(avatar))
                     self.app.notifyNewData(str(content), "Blog "+login, avatar)
 
             
