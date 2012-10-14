@@ -81,9 +81,7 @@ class nbnotify:
                 print("Cannot create "+configPath+" directory, please check your permissions")
 
         if not os.path.isfile(configPath):
-            w = open(configPath, "w")
-            w.write("[connection]\ntimeout = 60\n\n[global]\nchecktime = 60")
-            w.close()
+            os.system("cp /usr/share/nbnotify/config-example "+configPath)
 
         self.Config.loadConfig()
 

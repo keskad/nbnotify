@@ -138,7 +138,10 @@ def parseArgs(app):
             sys.exit(0)
 
         if o in '--daemonize':
-            daemonize()
+            if not os.path.isdir("/tmp/nbnotify"):
+                os.system("mkdir /tmp/nbnotify")
+
+            daemonize(stdout='/tmp/nbnotify/.out', stderr='/tmp/nbnotify/.err')
 
 
     app.doPluginsLoad()
