@@ -82,6 +82,9 @@ class nbnotify:
         if not os.path.isfile(configPath):
             os.system("cp /usr/share/nbnotify/config-example "+configPath)
 
+        if not os.path.isfile(configPath):
+            os.system("cp /usr/local/share/nbnotify/config-example "+configPath)
+
         self.Config.loadConfig()
 
 
