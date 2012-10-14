@@ -11,6 +11,9 @@ Licence: LGPLv3
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+14.10.2012 (v.0.6.8) <webnull.www@gmail.com>:
+    + Jabber notifications via xmpppy library (required to work)
+
 13.10.2012 (v.0.6.7) <webnull.www@gmail.com>:
     + Custom host & port settings for bus server (please note - it's not secure to listen on public IP adress because there is no encryption implmemented yet. But if you are behind NAT/firewall it should be secure to use remote control in lan)
     * Shell command --append, -a is now using addPage instead of manually modifying configuration file

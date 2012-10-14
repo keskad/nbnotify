@@ -71,9 +71,12 @@ class PluginMain(libnbnotify.Plugin):
             while '  ' in text:
                 text = text.replace('  ', ' ')
 
-            text = text.replace("³", "ł")
-
-            return text
+            try:
+                text = text.replace("³", "ł")
+            except Exception:
+                pass
+        
+            return str(text)
             
            
 
@@ -108,7 +111,7 @@ class PluginMain(libnbnotify.Plugin):
                 if '<a href="/pro">PRO' in content:
                     continue
 
-                content = self._stripSpaces(unicode(self._stripHTML(re.sub(r'\s', ' ', content))))
+                content = self._stripSpaces(self._stripHTML(re.sub(r'\s', ' ', content)))
 
                 id = hashlib.md5(content).hexdigest()
 
