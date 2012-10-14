@@ -44,7 +44,7 @@ class PluginMain(libnbnotify.Plugin):
         id = str(a[1].encode("utf-8"))
 
         # a[2] - template
-        content = str(a[2].encode("utf-8")).replace("%username%", self.app.pages[pageID]['comments'][id]['username']).replace("%title%", self.app.pages[pageID]['title'].replace("\n", ""))
+        content = str(a[2].encode("utf-8")).replace("%username%", str(self.app.pages[pageID]['comments'][id]['username'].encode("utf-8"))).replace("%title%", str(self.app.pages[pageID]['title'].encode("utf-8")).replace("\n", ""))
 
         self.xmpp.send(xmpp.protocol.Message("webnull@ubuntu.pl", content+"\n\n"+self._stripHTML(self.app.pages[pageID]['comments'][id]['content'].replace("<br/>", "\n"))))
 
