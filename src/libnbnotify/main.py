@@ -6,6 +6,7 @@ import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
 import sqlite3
 from distutils.sysconfig import get_python_lib
 import socket
+import copy
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -298,20 +299,30 @@ class nbnotify:
 
     def disablePage(self, pageID, reason=''):
         try:
-            max_parse_errors = int(self.Config.getKey("global", "max_parse_errors"))
-            max_parse_errors = 0
+            errortimeout = int(self.Config.getKey("global", "errortimeout"))
         except ValueError:
-            self.Config.setKey("global", "max_parse_errors", "5")
-            max_parse_errors = 0
+            self.Config.setKey("global", "errortimeout", "300") # 5 minutes by default
+            errortimeout = 300
 
-        if int(self.pages[pageID]['exceptions']) == int(max_parse_errors):
+        if errortimeout == 0:
+            self.Config.setKey("global", "errortimeout", "300")
+            errortimeout = 300
+
+        if not pageID in self.disabledPages:
+            self.pages[pageID]['exceptions'] = int(time.time()+errortimeout)
             self.disabledPages[pageID] = reason
             self.Logging.output("Disabling page "+pageID+" due to found errors. "+reason, "warning", True)
             return True
-        else:
-            self.pages[pageID]['exceptions'] = self.pages[pageID]['exceptions'] + 1
-            self.Logging.output(pageID+" errors: "+str(self.pages[pageID]['exceptions']), "warning", True)
-            return False
+
+    def restoreDisabledPages(self):
+        timeNow = int(time.time())
+
+        a = copy.copy(self.disabledPages)
+
+        for pageID in a:
+            if self.pages[pageID]['exceptions'] < timeNow:
+                self.Logging.output("Enabling page "+pageID+" again", "warning", True)
+                del self.disabledPages[pageID]
 
 
     def checkComments(self, pageID, data=''):
@@ -416,6 +427,8 @@ class nbnotify:
             while True:
                 if self.configCheckChanges() == True:
                     t = self.getT()
+
+                self.restoreDisabledPages()
 
                 try:
                     for pageID in self.pages:

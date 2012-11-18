@@ -4,7 +4,7 @@
 		<platform>Linux</platform>
 	</platforms>
 
-	<version>0.7</version>
+	<version>0.7.1</version>
 	<mirrors>
 		<mirror>git://github.com/webnull/nbnotify.git</mirror>
 	</mirrors>
