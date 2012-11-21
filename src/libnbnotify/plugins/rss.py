@@ -20,12 +20,17 @@ class PluginMain(libnbnotify.Plugin):
             if data['staticPlugin'] == self.name:
                 domain = urlparse.urlparse(data['link']).hostname
                 link = data['link'].replace("http://"+domain, "").replace("https://"+domain, "")
-                id = hashlib.md5(data['link']).hexdigest()
+
+                if "reallink" in data:
+                    id = hashlib.md5(data['reallink']).hexdigest()
+                else:
+                    id = hashlib.md5(data['link']).hexdigest()
+        
                 fixedUrl = self.app.configGetKey("rss_fixurl", id)
 
                 ##### HANDLING 301 MOVED
                 if fixedUrl != "True":
-                    self.Logging.output("Checking RSS url and trying to fix domain/location if got 301 MOVED")
+                    self.Logging.output("Checking RSS url and trying to fix domain/location if got 301 MOVED, "+domain+link)
 
                     try:
                         connection = httplib.HTTPConnection(domain, 80, timeout=int(self.app.configGetKey("connection", "timeout")))
@@ -67,7 +72,11 @@ class PluginMain(libnbnotify.Plugin):
                             link += link+"?"+url.query
 
                 #### END OF 301 MOVED HANDLER
-                
+
+                if "icon" in data:
+                    a = data['icon']
+                    self.app.configSetKey("rssicons", id, a)
+                    self.Logging.output("RSS icon set to "+a, "debug", False)
 
                 # icon file
                 a = self.app.configGetKey("rssicons", id)

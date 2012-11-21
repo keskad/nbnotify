@@ -87,6 +87,8 @@ class PluginMain(libnbnotify.Plugin):
             if "wylogowany." in data:
                 return False
 
+            self.app.Logging.output("photoblog notifications check for "+pageID, "debug", False)
+
             data = str(data)
 
             login = str(self.app.pages[pageID]['reallink'].replace("http://photoblog.pl/mojphotoblog/", ""))

@@ -4,6 +4,7 @@ from time import strftime, localtime
 from StringIO import StringIO
 import hashlib
 import urlparse
+import hashlib
 
 class Logging:
     logger = None
@@ -116,7 +117,22 @@ class Hooking:
         if len(self.Hooks[name]) == 0:
             del self.Hooks[name]
 
-        return True 
+        return True
+
+    def findClass(self, name, className):
+        """ Search hook by class name """
+
+
+        hooks = self.Hooks.get(name, False)
+
+        for Hook in hooks:
+            pluginName = str(Hook.im_class).replace("libnbnotify.plugins.", "").replace(".PluginMain", "")
+
+            if pluginName == className:
+                return Hook
+
+        return False
+
 
     def getAllHooks(self, name):
         """ Get all hooked methods to execute them """
@@ -148,10 +164,34 @@ class Plugin:
         self.app = app
         self.Logging = app.Logging
 
-    def getAvatar(self, avatar):
+    def getPluginMethod(self, plugin):
+        """ Get other plugin hooked object by class name """
+
+        return self.app.Hooking.findClass("onAddPage", plugin)
+
+    def getPlugin(self, plugin):
+        """ Get other plugin instance """
+
+        if plugin in self.app.plugins:
+            return self.app.plugins[plugin].instance
+
+        return False
+
+
+    def md5(self, data):
+        return hashlib.md5(data).hexdigest()
+
+    def getAvatar(self, avatar, id=False):
+        """ Simple local avatar cache
+            Input: link to avatar image, optional alternative cache id
+            Returns: path to cached local avatar image or nothing on error """
+
         avatar = avatar.replace('\/', '/')
 
-        m = hashlib.md5(avatar).hexdigest()
+        if id == False:
+            m = self.md5(avatar)
+        else:
+            m = self.md5(id)
 
         if ".jpg" in avatar:
             icon = self.app.iconCacheDir+"/"+m+".jpg"

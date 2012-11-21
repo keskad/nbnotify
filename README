@@ -8,9 +8,24 @@ To install this app use:
 
 Licence: LGPLv3
 
+Requires:
+    + Python 2.7
+    + python-twitter (avaliable via pip install python-twitter) (optional)
+    + BeautifulSoup
+    + python-libnotify
+    + pyxmpp (optional)
+    + SSL support in Python
+
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+21.11.2012 (v.0.7.2) <webnull.www@gmail.com>:
+    + getPlugin, getPluginMethod methods in plugin API allows access to other plugins
+    + findClass in Hooking class allows searching a hooked object by class name
+    + ask.fm handling plugin (rss only but profile notifications are coming soon)
+    + RSS icon can be now set passing "icon" argument to addPage in rss plugin
+    + md5 function in plugin API
+
 18.11.2012 (v.0.7.1) <webnull.www@gmail.com>:
     * Pages disabled due to parsing errors are now automaticaly enabled after 5 minutes (time can be set in global->errortimeout)
 
