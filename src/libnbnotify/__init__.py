@@ -181,7 +181,7 @@ class Plugin:
     def md5(self, data):
         return hashlib.md5(data).hexdigest()
 
-    def getAvatar(self, avatar, id=False):
+    def getAvatar(self, avatar, id=False, imgType=False):
         """ Simple local avatar cache
             Input: link to avatar image, optional alternative cache id
             Returns: path to cached local avatar image or nothing on error """
@@ -198,11 +198,14 @@ class Plugin:
         else:
             icon = self.app.iconCacheDir+"/"+m+".png"
 
+        if imgType != False:
+            icon = self.app.iconCacheDir+"/"+m+"."+str(imgType)
+
         if not os.path.isfile(icon):
             parsedurl = urlparse.urlparse(avatar)
             data = self.app.httpGET(parsedurl.netloc, parsedurl.path)
 
-            if data != False:
+            if data != False and data != "":
                 w = open(icon, "wb")
                 w.write(data)
                 w.close()

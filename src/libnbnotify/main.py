@@ -7,6 +7,7 @@ import sqlite3
 from distutils.sysconfig import get_python_lib
 import socket
 import copy
+import urlparse
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -112,7 +113,19 @@ class nbnotify:
             self.Logging.output("GET: "+domain+url+", "+status, "debug", False)
             connection.close()
 
-            if len(data) == 0 and status == "301" :
+            if status == "302":
+                #self.redirections = self.redirections + 1
+
+                #if self.redirections > 5:
+                #    return False
+
+                redirection = response.getheader("Location")
+                url = urlparse.urlparse(redirection)
+                self.Logging.output("Got 302, redirecting to: "+redirection, "debug", False)
+                return self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""))
+                
+
+            if len(data) == 0 and status == "301":
                 self.Logging.output("Adding \"www\" subdomain to url", "warning", True)
 
                 try:
