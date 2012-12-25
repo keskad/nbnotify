@@ -82,7 +82,7 @@ class PluginMain(libnbnotify.Plugin):
                             test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", a[0]['href'])
                             
                             if test[0] == 'profile.php':
-								test = re.findall("id=([0-9]+)", a[0]['href'])
+                            	test = re.findall("id=([0-9]+)", a[0]['href'])
 
                             if len(test) > 0:
                                 localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")
