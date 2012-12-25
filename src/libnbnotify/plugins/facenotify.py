@@ -11,7 +11,7 @@ import json
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Facebook notifications'}
 
 class PluginMain(libnbnotify.Plugin):
-        name = "rss"
+        name = "facenotify"
 
         def _pluginInit(self):
             self.app.Hooking.connectHook("onAddPage", self.addPage)
@@ -49,7 +49,6 @@ class PluginMain(libnbnotify.Plugin):
             soup = BeautifulSoup.BeautifulStoneSoup(data)
             items = soup.findAll('item')
             domain = urlparse.urlparse(soup.find("link").string).hostname
-
             localAvatar = ""
 
             a = self.app.configGetKey("rssicons", pageID)
@@ -82,7 +81,7 @@ class PluginMain(libnbnotify.Plugin):
                             test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", a[0]['href'])
                             
                             if test[0] == 'profile.php':
-                            	test = re.findall("id=([0-9]+)", a[0]['href'])
+                                test = re.findall("id=([0-9]+)", a[0]['href'])
 
                             if len(test) > 0:
                                 localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")

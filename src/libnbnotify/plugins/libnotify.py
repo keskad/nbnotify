@@ -5,6 +5,9 @@ from BeautifulSoup import BeautifulSoup
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Provides Twitter.com support'}
 
 class PluginMain(libnbnotify.Plugin):
+
+    _queue = dict()
+
     def _pluginInit(self):
         self.app.Hooking.connectHook("onNotifyNew", self.notifySend)
         self.app.Hooking.connectHook("onNotifyNewData", self.notifySendData)
