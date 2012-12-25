@@ -59,6 +59,8 @@ class PluginMain(libnbnotify.Plugin):
             for item in items:
                 title = item.find("title").string
                 content = item.find("description").string
+                
+                localAvatar = ""
 
                 # try to get any image from content to display as notification icon
                 if "<img src" in content and str(a) == "False":
@@ -78,6 +80,9 @@ class PluginMain(libnbnotify.Plugin):
                     if len(a) > 0:
                         if "http://www.facebook.com/n/?" in a[0]['href']:
                             test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", a[0]['href'])
+                            
+                            if test[0] == 'profile.php':
+								test = re.findall("id=([0-9]+)", a[0]['href'])
 
                             if len(test) > 0:
                                 localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")
