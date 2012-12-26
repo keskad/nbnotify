@@ -88,6 +88,7 @@ class nbnotify:
             os.system("cp /usr/local/share/nbnotify/config-example "+configPath)
 
         self.Config.loadConfig()
+        self.Notifications = libnbnotify.Notifications(self)
 
 
     def httpGET(self, domain, url, secure=False, cookies=''):
@@ -430,7 +431,6 @@ class nbnotify:
     def main(self):
         self.addPagesFromConfig()
         self.loadCommentsFromDB()
-
         t = self.getT()
 
         if t == False or t == "False" or t == None:
@@ -446,6 +446,7 @@ class nbnotify:
                 try:
                     for pageID in self.pages:
                         self.checkPage(pageID)
+                        self.Notifications.sendMessages() # send all notifications
                 except RuntimeError:
                     pass
 

@@ -119,4 +119,5 @@ class PluginMain(libnbnotify.Plugin):
                     self.app.pages[str(pageID)]['title'] = title
                     self.app.pages[str(pageID)]['comments'][id] = {'username': domain, 'content': content, 'title': title, 'avatar': localAvatar}
                     self.app.addCommentToDB(pageID, id, localAvatar)
-                    self.app.notifyNew(pageID, id, "\"%title%\"")
+                    #self.app.notifyNew(pageID, id, "\"%title%\"")
+                    self.app.Notifications.add('rss_'+pageID, title, content, '', localAvatar, pageID)

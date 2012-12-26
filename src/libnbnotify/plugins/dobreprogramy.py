@@ -158,9 +158,10 @@ class PluginMain(libnbnotify.Plugin):
                 # comment content - <div class="text-h75 tresc"
                 nSoup = str(cSoup.findAll("div", {'class': "text-h75 tresc"})[0]).replace('<div class="text-h75 tresc">', '').replace('</div>', '')
                 self.app.pages[str(pageID)]['comments'][id]['content'] = nSoup
-               # self.pages[str(pageID)]['comments'][id]['content'] = 
+                title = self.app.pages[str(pageID)]['comments'][id]['username']+ " skomentował wpis \""+self.app.pages[pageID]['title']+"\""
 
                 if isNew == True:
-                    self.app.notifyNew(pageID, id, "%username% skomentował wpis \"%title%\"")
+                    #self.app.notifyNew(pageID, id, "%username% skomentował wpis \"%title%\"")
+                    self.app.Notifications.add('dp_'+pageID, title, self.app.pages[str(pageID)]['comments'][id]['content'], '', localAvatar, pageID)
                     self.app.addCommentToDB(pageID, id, localAvatar)
                     isNew = False

@@ -67,8 +67,9 @@ class PluginMain(libnbnotify.Plugin):
 
                 if not id in self.app.pages[str(pageID)]['comments']:
                     self.app.pages[str(pageID)]['comments'][id] = {'avatar': avatar, 'username': title, 'content': content}
-                    self.app.notifyNewData(content, title, avatar, pageID='')
+                    #self.app.notifyNewData(content, title, avatar, pageID='')
                     self.app.addCommentToDB(pageID, id, avatar)
+                    self.app.Notifications.add('twitter', title, content, '', avatar, pageID='')
 
 
 

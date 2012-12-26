@@ -123,7 +123,8 @@ class PluginMain(libnbnotify.Plugin):
                     self.app.pages[str(pageID)]['title'] = title
                     self.app.pages[str(pageID)]['comments'][id] = {'username': str(profile), 'content': str(content), 'title': str(title), 'avatar': str(avatar)}
                     self.app.addCommentToDB(pageID, id, str(avatar))
-                    self.app.notifyNewData(str(content), "Blog "+login, avatar)
+                    #self.app.notifyNewData(str(content), "Blog "+login, avatar)
+                    self.app.Notifications.add('fbl_'+str(login), title, content, '', avatar, pageID)
 
             
             

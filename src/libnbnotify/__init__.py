@@ -6,6 +6,66 @@ import hashlib
 import urlparse
 import hashlib
 
+class Notifications:
+    """ Notifications queue system """
+
+    _queue = dict()
+    _m = False
+    maxMessagesPerEvent = 3
+    app = None
+
+    def __init__(self, app):
+        self.app = app
+
+        try:
+            self.maxMessagesPerEvent = int(self.app.Config.getKey("global", "notifications_per_event"))
+        except ValueError:
+            self.maxMessagesPerEvent = 3
+
+        if self.maxMessagesPerEvent < 1:
+            self.maxMessagesPerEvent = 3
+
+        self.app.Logging.output("Notification messages per event is "+str(self.maxMessagesPerEvent)+" (global->notifications_per_event)", "debug", False)
+
+    def add(self, eventName, title, content, date, icon='', pageID=''):
+        """ Add new message to queue """
+
+        self._m = True
+
+        #self.app.Logging.output("Adding to queue of "+eventName, "debug", False)
+
+        # create new event
+        if not eventName in self._queue:
+            self._queue[eventName] = list()
+
+        # add to queue
+        self._queue[eventName].append({'date': date, 'title': title, 'content': content, 'icon': icon, 'pageID': pageID})
+
+        # remove first element from queue if its already full
+        if len(self._queue[eventName]) > self.maxMessagesPerEvent:
+            self._queue[eventName].pop(0)
+
+        return True
+
+
+    def sendMessages(self):
+        """ Send all notifications """
+
+        #if self._m == False: # dont run if queue is unmodified
+        #    return True
+
+        for event in self._queue:
+            for item in self._queue[event]:
+                self.app.Hooking.executeHooks(self.app.Hooking.getAllHooks("onNotifyNewData"), [item['content'], item['title'], item['pageID'], item['icon']])
+            
+            self._queue[event] = list()
+
+        #self.app.Logging.output("Notifications sent", "debug", False)
+
+        self._m = False
+        return True
+
+
 class Logging:
     logger = None
 

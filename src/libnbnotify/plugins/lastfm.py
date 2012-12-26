@@ -100,6 +100,7 @@ class PluginMain(libnbnotify.Plugin):
                     self.app.pages[str(pageID)]['comments'][id] = {'username': t['recenttracks']['@attr']['user'], 'content': message, 'title': title, 'avatar': avatar}
                     self.app.addCommentToDB(pageID, id, avatar)
 
-                    self.app.notifyNewData(str(message), title, avatar)
+                    #self.app.notifyNewData(str(message), title, avatar)
+                    self.app.Notifications.add('lastfm_'+t['recenttracks']['@attr']['user'], title, message, '', avatar, pageID)
                 
 
