@@ -51,8 +51,8 @@ class Notifications:
     def sendMessages(self):
         """ Send all notifications """
 
-        #if self._m == False: # dont run if queue is unmodified
-        #    return True
+        if self._m == False: # dont run if queue is unmodified
+            return True
 
         for event in self._queue:
             for item in self._queue[event]:
@@ -61,6 +61,7 @@ class Notifications:
             self._queue[event] = list()
 
         #self.app.Logging.output("Notifications sent", "debug", False)
+        self.app.Hooking.executeHooks(self.app.Hooking.getAllHooks("onSendMessages"), len(self._queue))
 
         self._m = False
         return True

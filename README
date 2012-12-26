@@ -19,6 +19,9 @@ Requires:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+27.12.2012 (v.0.7.6) <webnull.www@gmail.com>:
+    + Sound notifications via sound plugin
+
 26.12.2012 (v.0.7.5) <webnull.www@gmail.com>:
     * Fixed sorting in facenotify, lastfm, fbl, rss, dobreprogramy, nbtwitter
     + facenotify is now displaying pages avatars
@@ -28,7 +31,7 @@ Changelog:
     + New configuration option allows to decide if we want HTML code in notifications or not (libnotify - global->libnotify_strip_html)
 
 25.12.2012 (v.0.7.3.1) <lxnmen@gmail.com>:
-	* facenotify: fixed bugs with avatars displaying
+    * facenotify: fixed bugs with avatars displaying
 
 24.12.2012 (v.0.7.3) <webnull.www@gmail.com>:
     * Fixed creating 0 bytes avatars
