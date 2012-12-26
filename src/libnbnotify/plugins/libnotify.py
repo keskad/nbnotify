@@ -6,7 +6,6 @@ PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 
 
 class PluginMain(libnbnotify.Plugin):
     def _pluginInit(self):
-        self.app.Hooking.connectHook("onNotifyNew", self.notifySend)
         self.app.Hooking.connectHook("onNotifyNewData", self.notifySendData)
 
         try:
