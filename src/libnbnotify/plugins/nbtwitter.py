@@ -57,6 +57,8 @@ class PluginMain(libnbnotify.Plugin):
                 self.app.removePage(pageID)
                 return False
 
+            timeline.reverse()
+
             for event in timeline:
                 title = str(event.user.name) + " @"+str(event.user.screen_name)+" ("+str(event.created_at)+")"
                 avatar = self.getAvatar(str(event.user.profile_image_url))

@@ -21,7 +21,7 @@ class PluginMain(libnbnotify.Plugin):
         #pageID = a[2]
         icon = a[3]
 
-        if self.app.Config.get("global", "libnotify_strip_html") != False:
+        if self.app.Config.getKey("global", "libnotify_strip_html") != False:
             data = self._stripHTML(data)
 
         self._libnotifySend(data, title, icon)

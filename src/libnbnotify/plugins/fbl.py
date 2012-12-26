@@ -97,6 +97,8 @@ class PluginMain(libnbnotify.Plugin):
             soup = BeautifulSoup.BeautifulSoup(data)
             elements = soup.findAll('li', {'class': 'infos_box clearfix'})
 
+            elements.reverse()
+
             for element in elements:
 
                 # i dont know its working

@@ -130,6 +130,8 @@ class PluginMain(libnbnotify.Plugin):
             isNew = False
             commentsList = dict()
 
+            commentsHTML.reverse()
+
             for comment in commentsHTML:
                 # comment id - first <img src="(.*)"
                 cSoup = BeautifulSoup.BeautifulSoup(str(comment))

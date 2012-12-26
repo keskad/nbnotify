@@ -55,6 +55,8 @@ class PluginMain(libnbnotify.Plugin):
             if str(a) != "False":
                 localAvatar = a
 
+            items.reverse()
+
             for item in items:
                 title = item.find("title").string
                 content = item.find("description").string
@@ -77,16 +79,34 @@ class PluginMain(libnbnotify.Plugin):
                     a = t.findAll("a")
 
                     if len(a) > 0:
-                        if "http://www.facebook.com/n/?" in a[0]['href']:
-                            test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", a[0]['href'])
-                            
-                            if test[0] == 'profile.php':
-                                test = re.findall("id=([0-9]+)", a[0]['href'])
+                        for k in a:
+                            k['href'] = k['href'].replace("%2F", "/")
 
-                            if len(test) > 0:
-                                localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")
+                            if "/n/?photo.php" in k['href']:
+                                continue
+
+                            if "/n/?pages/" in k['href']: # /n/?pages/I-hate-like-share-or-comment-spam-on-fb/
+                                test = re.findall("n\/\?pages\/([A-Za-z0-9\-\_]+)\/([0-9]+)", k['href'])
+
+                                if len(test) > 0:
+                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0][1]+"/picture", imgType="jpg")
+                                break
+
+                            if "http://www.facebook.com/n/?" in k['href']:
+                                test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", k['href'])
+
+                                if test[0] == 'profile.php':
+                                    test = re.findall("id=([0-9]+)", k['href'])
+
+                                if len(test) > 0:
+                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")
+
+                                break
+
+
 
                 except Exception as e:
+                    self.app.Logging.output("Cannot parse facebook notification photo, "+str(e), "warning", True)
                     pass
 
                 id = hashlib.md5(title).hexdigest()

@@ -99,6 +99,8 @@ class PluginMain(libnbnotify.Plugin):
             if str(a) != "False":
                 localAvatar = a
 
+            items.reverse()
+
             for item in items:
                 title = item.find("title").string
                 content = item.find("description").string

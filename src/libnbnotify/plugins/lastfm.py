@@ -62,6 +62,8 @@ class PluginMain(libnbnotify.Plugin):
 
             self.Logging.output("Last.fm API check: "+str(t['recenttracks']['@attr']['user']), "debug", False)
 
+            t['recenttracks']['track'].reverse()
+
             for track in t['recenttracks']['track']:
                 played = track['artist']['#text'] + " - " + track['name']
 
