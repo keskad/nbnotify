@@ -15,6 +15,7 @@ Requires:
     + python-libnotify
     + pyxmpp (optional)
     + SSL support in Python
+    + mplayer/sox/pyglet (optional for sound support)
 
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
