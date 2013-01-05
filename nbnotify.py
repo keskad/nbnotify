@@ -8,10 +8,6 @@ def parseArgs(app):
     if not os.path.isdir(app.iconCacheDir):
         os.system("mkdir -p "+app.iconCacheDir)
 
-    app.db = libnbnotify.database.Database()
-    app.loadConfig()
-    app.loadPasswords()
-
     try:
         opts, args = getopt.getopt(sys.argv[1:], "ha:r:lt:p", ["help", "append=", "remove=", 'list', 'daemonize', 'type', 'list-plugins', 'list-types', 'config=', 'value=', 'list-config', 'force-new'])
     except Exception as err:
@@ -22,6 +18,17 @@ def parseArgs(app):
     Type = None
     Variable = None
     ForceNew = False
+
+    # turn off debugging & error reporting when showing usage dialog
+    try:
+        if "-h" in opts[0] or "--help" in opts[0]:
+            app.Logging.turnOffLogger()
+    except:
+        pass
+
+    app.db = libnbnotify.database.Database()
+    app.loadConfig()
+    app.loadPasswords()
 
     for o, a in opts:
         if o in ('-h', '--help'):
@@ -83,7 +90,7 @@ def parseArgs(app):
         if o in "--list-config":
             i = 0
 
-            for var in app.Config:
+            for var in app.Config.Config:
                 i = i + 1
                 section = app.configGetSection(var)
 
@@ -150,18 +157,24 @@ def parseArgs(app):
 
 def usage():
     print("nbnotify -[short GNU option] [value] --[long GNU option]=[value]")
-    print("\nUsage:\n")
-    print("--help, -h (this message)")
-    print("--type, -t (type of added link; MUST BE USED BEFORE --add)")
-    print("--append, -a (add or modify link in database)")
-    print("--remove, -r (remove link from database)")
-    print("--list, -l (list all links)")
-    print("--list-plugins, --list-types, -p (list all avaliable plugins)")
-    print("--list-config, (list all avaliable configuration variables)")
-    print("--daemonize, (fork to background and run as userspace daemon)")
-    print("--config, (set configuration variable)")
-    print("--value, (set value of configuration variable specified in --config)")
-    print("--force-new (force creation of new configuration variable)")
+    print("\nUsage:")
+    print(" --help, -h (this message)")
+    print(" --daemonize, (fork to background and run as userspace daemon)")
+
+    print("\n Links:")
+    print(" --append, -a (add or modify link in database)")
+    print(" --list, -l (list all links)")
+    print(" --type, -t (type of added link; MUST BE USED BEFORE --add)")
+    print(" --remove, -r (remove link from database)")
+
+    print("\n Plugins:")
+    print(" --list-plugins, --list-types, -p (list all avaliable plugins)")
+
+    print("\n Configuration:")
+    print(" --list-config, (list all avaliable configuration variables)")
+    print(" --config, (set configuration variable)")
+    print(" --value, (set value of configuration variable specified in --config)")
+    print(" --force-new (force creation of new configuration variable)")
 
 def daemonize (stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     '''This forks the current process into a daemon.

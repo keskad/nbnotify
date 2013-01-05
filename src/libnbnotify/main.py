@@ -42,12 +42,15 @@ class nbnotify:
     pluginsList=list() # ordered list
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain", "User-Agent": "Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.4 (KHTML, like Gecko) Chrome/22.0.1229.79 Safari/537.4", "Accept-charset": "ISO-8859-2,utf-8;q=0.7,*;q=0.3", "Accept-language": "en-US,en;q=0.8,pl;q=0.6"}
 
+    # defaults
+    defaultDisabledPlugins = 'libxmpp,nbtwitter'
+
 
     def __init__(self):
         self.Logging = libnbnotify.Logging(self)
         self.Config = libnbnotify.config.Config(self, self.configDir+"/"+self.configFile)
 
-        # Config bindings
+        # Deprecated config bindings
         self.configGetKey = self.Config.getKey
         self.configSetKey = self.Config.setKey
         self.configGetSection = self.Config.getSection
@@ -56,10 +59,9 @@ class nbnotify:
         self.configCheckChanges = self.Config.checkChanges
 
 
-    def shellquote(self, s):
-        return "'" + s.replace("'", "'\\''") + "'"
-
     def loadPasswords(self):
+        """ Load passwords storage """
+
         self.Passwords = libnbnotify.config.Config(self, self.configDir+"/auth")
 
         if not os.path.isfile(self.configDir+"/auth"):
@@ -90,8 +92,19 @@ class nbnotify:
         self.Config.loadConfig()
         self.Notifications = libnbnotify.Notifications(self)
 
+    def connectionTest(self):
+        """ Do a internet connection test """
 
-    def httpGET(self, domain, url, secure=False, cookies=''):
+        try:
+            connection = httplib.HTTPConnection(self.Config.getKey("global", "ping_host", "google.com"), 80, timeout=int(self.Config.getKey("connection", "timeout", 5)))
+            connection.request("GET", "/")
+            return True
+        except socket.gaierror:
+            return False
+            
+
+
+    def httpGET(self, domain, url, secure=False, cookies='', redir=0):
         """ Do a HTTP GET request, handle errors """
 
         if url[0:1] != "/":
@@ -106,49 +119,53 @@ class nbnotify:
             h['Cookie'] = cookies
 
         try:
-            connection = httplib.HTTPConnection(domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
+            socket.ssl
+        except Exception as e:
+            self.Logging.output("SSL is not supported by socket library, switching back to unsecure http connection for link "+str(url), "debug", True)
+            secure = False # disable secure connection if SSL is not supported
+
+        try:
+
+            # SSL support
+            if secure == True:
+                connection = httplib.HTTPSConnection(domain, 443, timeout=int(self.Config.getKey("connection", "timeout", 5)))
+            else:
+                connection = httplib.HTTPConnection(domain, 80, timeout=int(self.Config.getKey("connection", "timeout", 5)))
+
+
             connection.request("GET", str(url), headers=h)
             response = connection.getresponse()
             status = str(response.status)
             data = response.read()
-            self.Logging.output("GET: "+domain+url+", "+status, "debug", False)
+            self.Logging.output(domain+url+", "+status, "debug", False)
             connection.close()
 
-            if status == "302":
-                #self.redirections = self.redirections + 1
-
-                #if self.redirections > 5:
-                #    return False
-
+            if status == "302" or status == "301" or status == "303":
                 redirection = response.getheader("Location")
+
+                if redir > 5:
+                    self.Logging.output("Maximum redirection count exceeded on link "+redirection, "warning", True)
+                    return False
+
                 url = urlparse.urlparse(redirection)
-                self.Logging.output("Got 302, redirecting to: "+redirection, "debug", False)
-                return self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""))
-                
+                self.Logging.output("Got "+status+", redirecting to: "+redirection, "debug", False)
 
-            if len(data) == 0 and status == "301":
-                self.Logging.output("Adding \"www\" subdomain to url", "warning", True)
-
-                try:
-                    socket.ssl
-                except Exception as e:
-                    self.Logging.output("SSL is not supported by socket library, switching back to unsecure http connection for link "+str(url), "debug", True)
-                    secure = False # disable secure connection if SSL is not supported
-
-                # support SSL
-                if secure == True:
-                    connection = httplib.HTTPSConnection("www."+domain, 443, timeout=int(self.configGetKey("connection", "timeout")))
+                # check if we are redirected to SSL connection
+                if url.scheme == "https":
+                    secure = True
                 else:
-                    connection = httplib.HTTPConnection("www."+domain, 80, timeout=int(self.configGetKey("connection", "timeout")))
+                    secure = False # unsecure HTTP connection
 
-                connection.request("GET", str(url), headers=h)
-                response = connection.getresponse()
-                status = str(response.status)
-                data = response.read()
-                self.Logging.output("GET: www."+domain+url+", "+status, "debug", False)
-                connection.close()
+                # increase redirection count
+                redir = redir+1
+
+                return self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""), secure, cookies, redir)
+
         except Exception as e:
             self.Logging.output("HTTP request failed, "+str(e), "warning", True)
+
+            # do a connection test on HTTP request failure
+            self.cTest = self.connectionTest()
 
         return data
 
@@ -204,7 +221,9 @@ class nbnotify:
 
 
 
-    def addPage(self, link, editingConfig=False):
+    def addPage(self, link):
+        """ Add page to database """
+
         m = hashlib.md5(link).hexdigest()
         originalLink = link
         oldM = m
@@ -312,11 +331,7 @@ class nbnotify:
         return True
 
     def disablePage(self, pageID, reason=''):
-        try:
-            errortimeout = int(self.Config.getKey("global", "errortimeout"))
-        except ValueError:
-            self.Config.setKey("global", "errortimeout", "300") # 5 minutes by default
-            errortimeout = 300
+        errortimeout = int(self.Config.getKey("global", "errortimeout", 300))
 
         if errortimeout == 0:
             self.Config.setKey("global", "errortimeout", "300")
@@ -413,13 +428,13 @@ class nbnotify:
             sys.exit(0)
 
         for page in section:
-            self.addPage(section[page], editingConfig=False)
+            self.addPage(section[page])
 
         #self.configQueueExecute()
             
     def getT(self):
         try:
-            t = int(self.configGetKey("global", "checktime"))
+            t = int(self.Config.getKey("global", "checktime", 120))
         except ValueError:
             self.Logging.output("Invalid [global]->checktime value, must be integer not a string", "warning", True)
             t = 120
@@ -428,25 +443,73 @@ class nbnotify:
 
         return t
 
-    def main(self):
+    def initDatabase(self):
+        """ Load comments and pages from configuration and database """
+
         self.addPagesFromConfig()
         self.loadCommentsFromDB()
+        return True
+
+    def main(self):
+        """ Main loop, connection test, reloading configuration, sending notifications etc. """
+
+        self.cTest = self.connectionTest()
+        connectionTestTime = time.time()
         t = self.getT()
+        dbInit = False
+
+
+        # internet connection check, if cannot ping 100% uptime server it will report a warning to console
+        if self.cTest == False:
+            self.Logging.output("Internet connection problem detected, check your internet connection or DNS settings.", "warning", True)
+        else:
+            dbInit = self.initDatabase() # load database only if we have internet connection
 
         if t == False or t == "False" or t == None:
             t = 5 # 60 seconds
 
         try:
             while True:
+                # if configuration was changed check if our interval time of checking new links was changed
                 if self.configCheckChanges() == True:
                     t = self.getT()
 
+
+                #### CONNECTION TEST CODE ####
+
+                # check if routine connection test is enabled (interval > 5)
+                if self.Config.getKey("global", "connection_test_time") > 5:
+                    # routine check of internet connection every "connection_test_time" of seconds
+                    if (time.time()-connectionTestTime) >= int(self.Config.getKey("global", "connection_test_time", 600)): # default is 600 seconds = 10 minutes
+                        self.cTest = self.connectionTest()
+                        connectionTestTime = time.time() # save last check time
+
+                # so, we will check internet connection every 60 seconds here
+                if self.cTest == False:
+                    time.sleep(60) # sleep 60 seconds
+                    self.cTest = self.connectionTest() # ping google.com and to try again
+
+                    # send a message to console that we are online again
+                    if self.cTest == True:
+                        self.Logging.output("Finally we are back online", "debug", True)
+
+                        # initialize database if not initialized yet
+                        if dbInit == False:
+                            dbInit = self.initDatabase()
+
+                    # dont allow to execute all other things like links checking
+                    continue
+
+
+                #### END OF CONNECTION TEST ####
+
+                # restore some pages after failure (eg. internet connection problem)
                 self.restoreDisabledPages()
 
                 try:
                     for pageID in self.pages:
                         self.checkPage(pageID)
-                        self.Notifications.sendMessages() # send all notifications
+                        self.Notifications.sendMessages() # send all notifications from one link ;)
                 except RuntimeError:
                     pass
 
@@ -469,7 +532,7 @@ class nbnotify:
             pluginsDir = pluginsDir.replace("/usr/lib/", "/usr/local/lib/")
 
         # list of disabled plugins
-        pluginsDisabled = self.configGetKey('plugins', 'disabled')
+        pluginsDisabled = self.configGetKey('plugins', 'disabled', self.defaultDisabledPlugins)
 
         if pluginsDisabled:
             self.disabledPlugins = pluginsDisabled.split(",")

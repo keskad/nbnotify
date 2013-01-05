@@ -78,6 +78,7 @@ class Logging:
     loggingLevel = 2
     session = ""
     parent = None
+    logging = True
 
     def __init__(self, Parent):
         self.parent = Parent
@@ -105,10 +106,14 @@ class Logging:
 
     def turnOffLogger(self):
         self.logger = None
+        self.logging = False
         return True
 
     def output(self, message, utype='', savetoLogs=True, execHook=True, skipDate=False):
         """ Output to log file and to console """
+
+        if self.logging == False:
+            return False
 
         if not skipDate:
             message = self.convertMessage(message, inspect.stack()[1][3])
@@ -229,6 +234,11 @@ class Plugin:
         """ Get other plugin hooked object by class name """
 
         return self.app.Hooking.findClass("onAddPage", plugin)
+
+    def shellquote(self, s):
+        """ Escape shell command """
+
+        return "'" + s.replace("'", "'\\''") + "'"
 
     def getPlugin(self, plugin):
         """ Get other plugin instance """

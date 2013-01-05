@@ -20,6 +20,17 @@ Requires:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+05.01.2013 (v.0.7.7) <webnull.www@gmail.com>:
+    * Debugging and error messages are not shown when using --help or -h argument
+    * Usage informations are more readable
+    + Internet connection test
+    + Config.getKey got support for default values and is now able to automaticaly create missing configuration entries in file using default values
+    + More commented code
+    + Better support for 301, 302 and 303 codes in httpGET
+    + Config.getKey is now returning integer keys in integer type
+    + Maximum redirection count in httpGET
+    * Fixed --list-config
+
 27.12.2012 (v.0.7.6) <webnull.www@gmail.com>:
     + Sound notifications via sound plugin
 

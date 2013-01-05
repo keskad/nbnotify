@@ -15,7 +15,7 @@ class PluginMain(libnbnotify.Plugin):
         def _pluginInit(self):
             """ Initialize plugin, check if sound is enabled in config """
 
-            if str(self.app.Config.getKey("global", "sound")) == "False":
+            if self.app.Config.getKey("global", "sound", False) == False:
                 self.enabled = False
                 self.app.Logging.output("To enable sound set global->sound to True", "debug", False)
                 return False
@@ -38,7 +38,7 @@ class PluginMain(libnbnotify.Plugin):
         def soundNotify(self, count=''):
             """ Play sound notifications """
 
-            if os.path.isfile(str(self.app.Config.getKey("global", "soundfile"))):
+            if os.path.isfile(str(self.app.Config.getKey("global", "soundfile", "/usr/share/sounds/question.wav"))):
                 self._file = self.app.Config.getKey("global", "soundfile")
 
             if not os.path.isfile(self._file):

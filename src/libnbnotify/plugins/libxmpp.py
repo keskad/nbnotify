@@ -11,8 +11,8 @@ PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 
 
 class PluginMain(libnbnotify.Plugin):
     def _pluginInit(self):
-        if str(self.app.Config.getKey("libxmpp", "login")) == "False" or str(self.app.Config.getKey("libxmpp", "password")) == "False" or str(self.app.Config.getKey("libxmpp", "client_jid")) == "False":
-            self.app.Logging.output("Jabber notifications disabled because of no login details. Example configuration:\n[libxmpp] login=server@login.com\npassword=yourpassword\nclient_jid = your@jid.org", "debug", False)
+        if self.app.Config.getKey("libxmpp", "login", False) == False or self.app.Config.getKey("libxmpp", "password", False) == False or self.app.Config.getKey("libxmpp", "client_jid", False) == False:
+            self.app.Logging.output("Jabber notifications disabled because of no login details. Please check configuration file.", "debug", False)
             return False
 
         xmpp # exception should disable the plugin
@@ -21,10 +21,10 @@ class PluginMain(libnbnotify.Plugin):
         self.app.Hooking.connectHook("onNotifyNewData", self.notifySendData)
 
         try:
-            jid = xmpp.protocol.JID(self.app.Config.getKey("libxmpp", "login"))
+            jid = xmpp.protocol.JID(self.app.Config.getKey("libxmpp", "login", False))
             self.xmpp = xmpp.Client(jid.getDomain(), debug=[])
             self.xmpp.connect()
-            self.xmpp.auth(jid.getNode(), self.app.Config.getKey("libxmpp", "password"))
+            self.xmpp.auth(jid.getNode(), self.app.Config.getKey("libxmpp", "password", False))
         except Exception as e:
             self.app.Logging.output("Cannot connect to XMPP server, please check configuration. "+str(e), "warning", True)
 

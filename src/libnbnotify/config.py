@@ -9,6 +9,8 @@ else:
 
 
 class Config:
+    """ Configuration manager, basing on ini configuration files """
+
     Config = dict()
     configTime = None # config last modification time
     app = None
@@ -70,7 +72,7 @@ class Config:
         return self.Config.get(Section, False)
 
 
-    def getKey(self, Section, Key):
+    def getKey(self, Section, Key, default=None):
         """ Returns value of Section->Value configuration variable
 
             Args:
@@ -85,11 +87,26 @@ class Config:
 
         try:
             cfg = self.Config[Section][Key]
+
+            # returning int values instead of strings
+            try:
+                cfg = int(cfg)
+            except ValueError:
+                pass
+
             if str(cfg).lower() == "false":
                 return False
             else:
                 return cfg
+
         except KeyError:
+            # if we specified default value, let it be saved to configuration file too
+            if default != None:
+                self.app.Logging.output("Default configuration key set: "+Section+" => "+Key+" = "+str(default), "debug", True)
+                self.setKey(Section, Key, default)
+                self.save()
+                return default
+
             return False
 
     def checkChanges(self):

@@ -241,19 +241,16 @@ class PluginMain(libnbnotify.Plugin):
     port = 9954
 
     def _pluginInit(self):
-        if str(self.app.Config.getKey("bus_socket", "host")) == "False":
-            self.app.Config.setKey("bus_socket", "host", "127.0.0.1")
-        else:
-            self.host = str(self.app.Config.getKey("bus_socket", "host"))
+        self.host = str(self.app.Config.getKey("bus_socket", "host", "127.0.0.1"))
 
-        if str(self.app.Config.getKey("bus_socket", "port")) == "False":
-            self.app.Config.setKey("bus_socket", "port", "9954")
+        if self.app.Config.getKey("bus_socket", "port") == False:
+            self.app.Config.setKey("bus_socket", "port", 9954)
         else:
             try:
                 self.port = int(self.app.Config.getKey("bus_socket", "port"))
             except ValueError:
                 self.port = 9954
-                self.app.Config.setKey("bus_socket", "port", "9954")
+                self.app.Config.setKey("bus_socket", "port", 9954)
 
 
         if self.app.cli == False:
