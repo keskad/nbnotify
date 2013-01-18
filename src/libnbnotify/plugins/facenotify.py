@@ -15,7 +15,45 @@ class PluginMain(libnbnotify.Plugin):
 
         def _pluginInit(self):
             self.app.Hooking.connectHook("onAddPage", self.addPage)
+            self.app.Hooking.connectHook("onAddService", self.addService)
             return True
+
+
+        def addService(self, data):
+            if data['service'] == "facebook":
+                browser = data['browser']
+                cookies = browser.getCookie("facebook.com").toCookieHeader()
+                
+                if cookies != "":
+                    # https://www.facebook.com/notifications
+
+                    headers = dict()
+                    headers['accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+                    headers['accept-charset'] = 'ISO-8859-2,utf-8;q=0.7,*;q=0.3'
+                    #headers['accept-encoding'] = '
+                    headers['accept-language'] = 'en-US,en;q=0.8,pl;q=0.6'
+                    headers['cookie'] = cookies
+                    headers['dnt'] = '1'
+                    headers['host'] = 'www.facebook.com'
+                    headers['method'] = 'GET'
+                    headers['referer'] = 'https://www.facebook.com/home.php'
+                    headers['scheme'] = 'https'
+                    headers['version'] = 'HTTP/1.1'
+                    headers['user-agent'] = 'Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.17 (KHTML, like Gecko) Chrome/24.0.1312.52 Safari/537.17'
+                    headers['url'] = '/notifications'
+
+                    contents = self.app.httpGET('www.facebook.com', '/notifications', secure=True, cookies=cookies, headers=headers)
+
+                    r = re.findall("\/feeds\/notifications\.php\?([A-Za-z\&\;0-9\=\_\-\.]+)\"\>", contents)
+
+                    if len(r) > 0:
+                        link = "https://www.facebook.com/feeds/notifications.php?"+r[0]
+
+                    return {'link': link}
+
+                return False
+
+
 
         def addPage(self, data):
             if data['link'][0:48] == 'https://www.facebook.com/feeds/notifications.php':

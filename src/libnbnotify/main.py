@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 import libnbnotify
 import libnbnotify.config
+import libnbnotify.browser
 import traceback
 import os, hashlib, re, BeautifulSoup, sys, time, glob, traceback
 import sqlite3
@@ -35,6 +36,10 @@ class nbnotify:
     pages = dict()
     disabledPages = dict() # Page => Reason
     Hooking = libnbnotify.Hooking()
+
+    # Used Web Browsers (we dont have to load them all...)
+    webBrowsers = dict()
+    
 
     # Plugin system adapted from Subget
     disabledPlugins = list()
@@ -104,7 +109,7 @@ class nbnotify:
             
 
 
-    def httpGET(self, domain, url, secure=False, cookies='', redir=0):
+    def httpGET(self, domain, url, secure=False, cookies='', headers='', redir=0):
         """ Do a HTTP GET request, handle errors """
 
         if url[0:1] != "/":
@@ -112,7 +117,11 @@ class nbnotify:
 
         data = False
 
-        h = self.headers
+        # custom headers
+        if headers != '':
+            h = headers
+        else:
+            h = self.headers
 
         # add cookie header
         if cookies != '':
@@ -159,7 +168,7 @@ class nbnotify:
                 # increase redirection count
                 redir = redir+1
 
-                return self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""), secure, cookies, redir)
+                self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""), secure, cookies, redir)
 
         except Exception as e:
             self.Logging.output("HTTP request failed, "+str(e), "warning", True)
@@ -218,6 +227,55 @@ class nbnotify:
         """ Removes http/https and www """
 
         return link.replace("http://", "").replace("https://", "").replace("www.", "")
+
+
+    def addService(self, serviceURL):
+        """ Add new link from service URL """
+
+        sep = serviceURL.split(".")
+        sepL = len(sep)
+
+        # chromium.profile.facebook
+        if sepL == 3:
+            browser = sep[0]
+            profile = sep[1]
+            service = sep[2]
+
+        # chromium.facebook
+        if sepL == 2:
+            browser = sep[0]
+            profile = self.Config.getKey("services", "default_profile", "default")
+            service = sep[1]
+
+        # facebook
+        if sepL == 1:
+            browser = self.Config.getKey("services", "default_browser", "chromium")
+            profile = self.Config.getKey("services", "default_profile", "default")
+            service = sep[0]
+
+        if not browser in self.webBrowsers:
+            if os.path.isfile(libnbnotify.browser.__path__[0]+"/"+browser+".py"):
+                exec("import libnbnotify.browser."+browser+" as tmpBrowser")
+
+                self.webBrowsers[browser] = tmpBrowser.nbBrowser()
+                self.webBrowsers[browser].load(profile)
+            else:
+                self.Logging.output("Cannot find browser \""+browser+"\", to handle service url "+serviceURL, "warning", True)
+                return False
+
+
+        webBrowser = self.webBrowsers[browser]
+        hooks = self.Hooking.getAllHooks("onAddService")
+        
+        if hooks:
+            for Hook in hooks:
+                pluginName = str(Hook.im_class).replace("libnbnotify.browser.", "").replace(".nbBrowser", "")
+
+                x = Hook({'service': service, 'browser': webBrowser, 'profile': profile, 'serviceURL': serviceURL})
+
+                if type(x).__name__ == "dict":
+                    data = x
+                    return self.addPage(data['link'])
 
 
 

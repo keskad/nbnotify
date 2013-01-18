@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-*- coding: utf-8 -*-
-import libnbnotify.main, libnbnotify.database, libnbnotify.plugins, os, sys, getopt, hashlib
+import libnbnotify.main, libnbnotify.database, libnbnotify.plugins, libnbnotify.browser, os, sys, getopt, hashlib
 
 def parseArgs(app):
     """ Args parser """
@@ -9,7 +9,7 @@ def parseArgs(app):
         os.system("mkdir -p "+app.iconCacheDir)
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha:r:lt:p", ["help", "append=", "remove=", 'list', 'daemonize', 'type', 'list-plugins', 'list-types', 'config=', 'value=', 'list-config', 'force-new'])
+        opts, args = getopt.getopt(sys.argv[1:], "ha:r:lt:pbs", ["help", "append=", "remove=", 'list', 'daemonize', 'type', 'list-plugins', 'list-types', 'config=', 'value=', 'list-config', 'force-new', 'service', 'list-browsers', 'debug'])
     except Exception as err:
         print("Error: "+str(err)+", Try --help for usage\n\n")
         usage()
@@ -20,11 +20,17 @@ def parseArgs(app):
     ForceNew = False
 
     # turn off debugging & error reporting when showing usage dialog
-    try:
-        if "-h" in opts[0] or "--help" in opts[0]:
-            app.Logging.turnOffLogger()
-    except:
-        pass
+    #try:
+    #    if "-h" in opts[0] or "--help" in opts[0]:
+    #        
+    #except:
+    #    pass
+
+    app.Logging.silent = True
+
+    if len(opts) > 0:
+        if "--debug" in opts[0]:
+            app.Logging.silent = False
 
     app.db = libnbnotify.database.Database()
     app.loadConfig()
@@ -51,14 +57,43 @@ def parseArgs(app):
 
             sys.exit(0)
 
-        # CONFIG EDITOR
-        if o in "--config":
+        ### Web Browsers support
+        if o == "--list-browsers" or o == "-b":
+            files = os.listdir(libnbnotify.browser.__path__[0])
+
+            print("Avaliable browsers:")
+
+            for file in files:
+                if file[-4:] == ".pyc":
+                    continue
+
+                if file == "__init__.py":
+                    continue
+
+                print("+ "+file[:-3])
+
+            print("\nExample usage: nbnotify --service chromium.default.facebook to add facebook session from 'default' profile of Chromium browser")
+
+            sys.exit(0)
+
+        if o == "--service" or o == "-s":
+            if len(args) == 0:
+                usage()
+                sys.exit(0)
+
+            app.doPluginsLoad()
+            app.addService(args[0])
+            sys.exit(0)
+
+
+        ### Configuration editor
+        if o == "--config":
             Variable = a
 
-        if o in "--force-new":
+        if o == "--force-new":
             ForceNew = True
 
-        if o in "--value":
+        if o == "--value":
             if Variable == None:
                 print("You must specify --config=section:option first")
                 sys.exit(0)
@@ -102,6 +137,7 @@ def parseArgs(app):
 
             sys.exit(0)
 
+        ### Links management
 
         if o in ('-t', '--type'):
             Type = a
@@ -145,13 +181,17 @@ def parseArgs(app):
 
             sys.exit(0)
 
-        if o in '--daemonize':
+
+        if o == '--daemonize':
             if not os.path.isdir("/tmp/.nbnotify"):
                 os.system("mkdir /tmp/.nbnotify")
 
             daemonize(stdout='/tmp/.nbnotify/.out', stderr='/tmp/.nbnotify/.err')
 
+    if app.Logging.silent == True:
+        print(app.Logging.session)
 
+    app.Logging.silent = False
     app.doPluginsLoad()
     app.main()
 
@@ -160,6 +200,7 @@ def usage():
     print("\nUsage:")
     print(" --help, -h (this message)")
     print(" --daemonize, (fork to background and run as userspace daemon)")
+    print(" --debug, (show all debugging messages realtime)")
 
     print("\n Links:")
     print(" --append, -a (add or modify link in database)")
@@ -175,6 +216,11 @@ def usage():
     print(" --config, (set configuration variable)")
     print(" --value, (set value of configuration variable specified in --config)")
     print(" --force-new (force creation of new configuration variable)")
+
+    print("\n Web Browsers support:")
+    print(" --list-browsers, (list all avaliable web browsers)")
+    print(" --service, -s (use web browser to connect to service eg. --service chromium.default.facebook)")
+    
 
 def daemonize (stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
     '''This forks the current process into a daemon.

@@ -77,6 +77,7 @@ class Logging:
 
     loggingLevel = 2
     session = ""
+    silent = False
     parent = None
     logging = True
 
@@ -122,24 +123,19 @@ class Logging:
             if self.logger is not None and savetoLogs:
                 self.logger.debug(message)
 
-            print(message)
-
         elif utype == "" and self.loggingLevel > 0:
             if self.logger is not None and savetoLogs:
                 self.logger.info(message)
-
-            print(message)
 
         elif utype == "warning" and self.loggingLevel > 0:
             if self.logger is not None and savetoLogs:
                 self.logger.warning(message)
 
-            print(message)
-
         elif utype == "critical" and self.loggingLevel > -1:
             if self.logger is not None and savetoLogs:
                 self.logger.critical(message)
 
+        if self.silent == False:
             print(message)
 
         # save all messages to show in messages console
