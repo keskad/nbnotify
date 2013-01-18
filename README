@@ -20,6 +20,11 @@ Requires:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+18.01.2013 (v.0.7.8) <webnull.www@gmail.com>:
+    + Added debug commandline parametr to keep console clean
+    + Initial support for adding links from desktop Web Browser session (Firefox and Chromium)
+    + facenotify supports adding user session using services method (nbnotify --service chromium.default.facebook)
+
 05.01.2013 (v.0.7.7) <webnull.www@gmail.com>:
     * Debugging and error messages are not shown when using --help or -h argument
     * Usage informations are more readable
