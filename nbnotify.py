@@ -88,6 +88,7 @@ def parseArgs(app):
                 print("Cannot add service, check logs or enable --debug option")
             else:
                 print("Added.")
+                app.Config.save()
 
             sys.exit(0)
 
