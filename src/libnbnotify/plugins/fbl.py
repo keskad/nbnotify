@@ -14,7 +14,18 @@ class PluginMain(libnbnotify.Plugin):
 
         def _pluginInit(self):
             self.app.Hooking.connectHook("onAddPage", self.addPage)
+            self.app.Hooking.connectHook("onAddService", self.addService)
             return True
+
+        def addService(self, data):
+            """ Service: {$browser}.{$profile}.photoblog / {$browser}.{$profile}.fbl """
+
+            if data['service'] == "photoblog" or data['service'] == "fbl":
+                browser = data['browser']
+                cookies = browser.getCookie("photoblog.pl").toCookieHeader()
+
+                if cookies != "" and cookies != None:
+                    return {'link': 'http://photoblog.pl/mojphotoblog/id/'+base64.b64encode(cookies)}
 
         def addPage(self, data):
             """ To add new link add: photoblog.pl/mojphotoblog/id/{here is base64(document.cookie)} """

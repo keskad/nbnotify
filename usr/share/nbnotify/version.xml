@@ -2,9 +2,10 @@
 <informations>
 	<platforms>
 		<platform>Linux</platform>
+                <platform>FreeBSD</platform>
 	</platforms>
 
-	<version>0.7.7</version>
+	<version>0.8</version>
 	<mirrors>
 		<mirror>git://github.com/webnull/nbnotify.git</mirror>
 	</mirrors>
