@@ -4,6 +4,7 @@ import BeautifulSoup
 import hashlib
 import os
 import httplib
+import urllib
 import urlparse
 import re
 import json
@@ -47,7 +48,7 @@ class PluginMain(libnbnotify.Plugin):
                     r = re.findall("\/feeds\/notifications\.php\?([A-Za-z\&\;0-9\=\_\-\.]+)\"\>", contents)
 
                     if len(r) > 0:
-                        link = "https://www.facebook.com/feeds/notifications.php?"+r[0]
+                        link = "https://www.facebook.com/feeds/notifications.php?"+urllib.unquote(r[0].replace('&amp;', '&'))
 
                     return {'link': link}
 
