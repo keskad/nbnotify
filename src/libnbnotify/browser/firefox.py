@@ -103,6 +103,7 @@ class nbBrowser:
 
     def __del__(self):
         if self.tmp != "":
+            self.socket.close()
             os.remove(self.tmp)
 
 

@@ -277,6 +277,8 @@ class nbnotify:
                     data = x
                     return self.addPage(data['link'])
 
+        return False
+
 
 
     def addPage(self, link):

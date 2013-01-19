@@ -27,11 +27,11 @@ class PluginMain(libnbnotify.Plugin):
             self.app.Hooking.connectHook("onSendMessages", self.soundNotify)
 
             # check if pyglet is installed
-            try:
-                import pyglet
-                sound = pyglet.media.load(self._file, streaming=False)
-            except Exception as e:
-                pass
+            #try:
+            #    import pyglet
+            #    sound = pyglet.media.load(self._file, streaming=False)
+            #except Exception as e:
+            #    pass
 
             return True
 
@@ -46,9 +46,9 @@ class PluginMain(libnbnotify.Plugin):
                 return False
 
             # pyglet
-            if self._sound != None:
-                self._sound.play()
-                return count
+            #if self._sound != None:
+            #    self._sound.play()
+            #    return count
 
             # mplayer
             if os.path.isfile("/usr/bin/mplayer"):
@@ -62,4 +62,8 @@ class PluginMain(libnbnotify.Plugin):
 
             self.app.Logging.output("Cannot find pyglet library, mplayer and sox. Cant play notification sound.", "warning", True)
             return count
+
+        #def __del__(self):
+            #if self._sound != None:
+               #self._sound
 

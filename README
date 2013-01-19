@@ -20,6 +20,10 @@ Requires:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+19.01.2013 (v.0.7.9) <webnull.www@gmail.com>:
+    - Removed pyglet code (caused a segmentation fault on application exit)
+    * Some fixes in "services" feature
+
 18.01.2013 (v.0.7.8) <webnull.www@gmail.com>:
     + Added debug commandline parametr to keep console clean
     + Initial support for adding links from desktop Web Browser session (Firefox and Chromium)

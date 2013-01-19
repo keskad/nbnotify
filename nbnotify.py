@@ -81,8 +81,14 @@ def parseArgs(app):
                 usage()
                 sys.exit(0)
 
+            app.cli = True
             app.doPluginsLoad()
-            app.addService(args[0])
+
+            if app.addService(args[0]) == False:
+                print("Cannot add service, check logs or enable --debug option")
+            else:
+                print("Added.")
+
             sys.exit(0)
 
 
