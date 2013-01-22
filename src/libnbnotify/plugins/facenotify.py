@@ -87,7 +87,7 @@ class PluginMain(libnbnotify.Plugin):
 
             soup = BeautifulSoup.BeautifulStoneSoup(data)
             items = soup.findAll('item')
-            domain = urlparse.urlparse(soup.find("link").string).hostname
+            domain = "www.facebook.com"
             localAvatar = ""
 
             a = self.app.configGetKey("rssicons", pageID)
@@ -128,7 +128,7 @@ class PluginMain(libnbnotify.Plugin):
                                 test = re.findall("n\/\?pages\/([A-Za-z0-9\-\_]+)\/([0-9]+)", k['href'])
 
                                 if len(test) > 0:
-                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0][1]+"/picture", imgType="jpg")
+                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0][1]+"/picture", imgType="jpg", cacheLifeTime=172800)
                                 break
 
                             if "http://www.facebook.com/n/?" in k['href']:
@@ -138,7 +138,7 @@ class PluginMain(libnbnotify.Plugin):
                                     test = re.findall("id=([0-9]+)", k['href'])
 
                                 if len(test) > 0:
-                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg")
+                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg", cacheLifeTime=86400)
 
                                 break
 

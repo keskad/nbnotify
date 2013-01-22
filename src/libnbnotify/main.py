@@ -9,6 +9,7 @@ from distutils.sysconfig import get_python_lib
 import socket
 import copy
 import urlparse
+from StringIO import StringIO
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -118,10 +119,10 @@ class nbnotify:
         data = False
 
         # custom headers
-        if headers != '':
-            h = headers
-        else:
+        if headers == '':
             h = self.headers
+        else:
+            h = headers
 
         # add cookie header
         if cookies != '':
@@ -130,7 +131,7 @@ class nbnotify:
         try:
             socket.ssl
         except Exception as e:
-            self.Logging.output("SSL is not supported by socket library, switching back to unsecure http connection for link "+str(url), "debug", True)
+            self.Logging.output("SSL is not supported by socket library, switching back to unsecure http connection for link "+str(url), "debug", False)
             secure = False # disable secure connection if SSL is not supported
 
         try:
@@ -168,10 +169,13 @@ class nbnotify:
                 # increase redirection count
                 redir = redir+1
 
-                self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""), secure, cookies, redir)
+                return self.httpGET(url.netloc, redirection.replace(url.scheme+"://"+url.netloc, ""), secure=secure, cookies=cookies, headers=h, redir=redir)
 
         except Exception as e:
             self.Logging.output("HTTP request failed, "+str(e), "warning", True)
+            buffer = StringIO()
+            traceback.print_exc(file=buffer)
+            print(buffer.getvalue())
 
             # do a connection test on HTTP request failure
             self.cTest = self.connectionTest()

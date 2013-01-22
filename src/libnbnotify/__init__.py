@@ -5,6 +5,8 @@ from StringIO import StringIO
 import hashlib
 import urlparse
 import hashlib
+import os
+import time
 
 class Notifications:
     """ Notifications queue system """
@@ -248,7 +250,7 @@ class Plugin:
     def md5(self, data):
         return hashlib.md5(data).hexdigest()
 
-    def getAvatar(self, avatar, id=False, imgType=False):
+    def getAvatar(self, avatar, id=False, imgType=False, cacheLifeTime=0):
         """ Simple local avatar cache
             Input: link to avatar image, optional alternative cache id
             Returns: path to cached local avatar image or nothing on error """
@@ -268,8 +270,22 @@ class Plugin:
         if imgType != False:
             icon = self.app.iconCacheDir+"/"+m+"."+str(imgType)
 
+        writeIcon = False
+
+        # write new avatar
         if not os.path.isfile(icon):
+            writeIcon = True
+        else:
+            if cacheLifeTime == 0:
+                writeIcon = False
+            else:
+                if int(time.time())-int(os.path.getmtime(icon)) >= cacheLifeTime:
+                    writeIcon = True
+
+
+        if writeIcon == True:
             parsedurl = urlparse.urlparse(avatar)
+
             data = self.app.httpGET(parsedurl.netloc, parsedurl.path)
 
             if data != False and data != "":
@@ -278,7 +294,7 @@ class Plugin:
                 w.close()
                 self.Logging.output("Notify icon saved: "+avatar, "debug", False)
             else:
-                self.Logging.output("Cannot notify icon: "+avatar, "warning", True)
+                self.Logging.output("Cannot get notify icon: "+avatar, "warning", True)
                 return ""
         
         return icon
