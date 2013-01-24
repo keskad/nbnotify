@@ -6,6 +6,7 @@ import urlparse
 import os
 import json
 import datetime
+#import time
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': True, 'Description': 'Tracking last played music by last.fm user'}
 
@@ -63,8 +64,14 @@ class PluginMain(libnbnotify.Plugin):
             self.Logging.output("Last.fm API check: "+str(t['recenttracks']['@attr']['user']), "debug", False)
 
             t['recenttracks']['track'].reverse()
+            i = 0
 
             for track in t['recenttracks']['track']:
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent and self.app.Notifications.maxMessagesPerEvent > 0:
+                    break
+
                 played = track['artist']['#text'] + " - " + track['name']
 
                 # unique ID based on lastfm's track id + playing date
@@ -73,36 +80,31 @@ class PluginMain(libnbnotify.Plugin):
                         date = datetime.datetime.today().strftime("%d %b %Y, %H:%M")
                 except Exception as e:
                     date = track['date']['#text']
-            
 
-                id = hashlib.md5(track['mbid']+date).hexdigest()
+                #date = int(time.time())
+                template = "{$track}\n{$date}"
 
-                if not id in self.app.pages[str(pageID)]['comments']:
+                try:
+                    if track['@attr']['nowplaying']:
+                        template = "Playing now:\n{$track}"
+                except Exception as e:
+                    pass
+
+                message = template.replace("{$track}", played)
+
+                try:
+                    message = message.replace("{$date}", track['date']['#text'])
+                except Exception:
+                    message = message.replace("{$date}", "")
+
+                title = t['recenttracks']['@attr']['user'] + " @ last.fm"
+
+                sid = hashlib.md5(date+message).hexdigest()
+
+                if self.app.Notifications.exists(sid) == False:
                     avatar = self.getAvatar(str(track['image'][1]['#text']))
 
-                    template = "{$track}\n{$date}"
-
-                    try:
-                        if track['@attr']['nowplaying']:
-                            template = "Playing now:\n{$track}"
-                    except Exception as e:
-                        pass
-
-                    message = template.replace("{$track}", played)
-
-                    try:
-                        message = message.replace("{$date}", track['date']['#text'])
-                    except Exception:
-                        message = message.replace("{$date}", "")
-
-                    title = t['recenttracks']['@attr']['user'] + " @ last.fm"
-
-                    # cache
-                    self.app.pages[str(pageID)]['title'] = title
-                    self.app.pages[str(pageID)]['comments'][id] = {'username': t['recenttracks']['@attr']['user'], 'content': message, 'title': title, 'avatar': avatar}
-                    self.app.addCommentToDB(pageID, id, avatar)
-
                     #self.app.notifyNewData(str(message), title, avatar)
-                    self.app.Notifications.add('lastfm_'+t['recenttracks']['@attr']['user'], title, message, '', avatar, pageID)
+                    self.app.Notifications.add('lastfm_'+t['recenttracks']['@attr']['user'], title, message, '', avatar, pageID, sid=sid)
                 
 

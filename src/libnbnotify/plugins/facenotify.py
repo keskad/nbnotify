@@ -8,6 +8,7 @@ import urllib
 import urlparse
 import re
 import json
+#import time
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Facebook notifications'}
 
@@ -95,10 +96,17 @@ class PluginMain(libnbnotify.Plugin):
                 localAvatar = a
 
             items.reverse()
+            i = 0
 
             for item in items:
-                title = item.find("title").string
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent:
+                    break
+
+
                 content = item.find("description").string
+                title = item.find("title").string
                 
                 localAvatar = ""
 
@@ -148,11 +156,18 @@ class PluginMain(libnbnotify.Plugin):
                     self.app.Logging.output("Cannot parse facebook notification photo, "+str(e), "warning", True)
                     pass
 
-                id = hashlib.md5(title).hexdigest()
+                #date = int(time.time())
 
-                if not id in self.app.pages[str(pageID)]['comments']:
-                    self.app.pages[str(pageID)]['title'] = title
-                    self.app.pages[str(pageID)]['comments'][id] = {'username': domain, 'content': content, 'title': title, 'avatar': localAvatar}
-                    self.app.addCommentToDB(pageID, id, localAvatar)
-                    #self.app.notifyNew(pageID, id, "\"%title%\"")
-                    self.app.Notifications.add('facenotify', 'Facebook', content, '', localAvatar, pageID='')
+                # exists(self, title, content, pageID, salt=''):
+                # add(self, eventName, title, content, date, icon='', pageID='', salt='', testMode=False):
+
+                sid = hashlib.md5(title).hexdigest()
+
+                if self.app.Notifications.exists(sid) == False:
+                    self.app.Notifications.add('facenotify', 'Facebook', content, '', icon=localAvatar, pageID=pageID, sid=sid)
+
+
+
+
+
+

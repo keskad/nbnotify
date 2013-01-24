@@ -86,28 +86,19 @@ class PluginMain(libnbnotify.Plugin):
         def checkRSS(self, pageID, data):
             soup = BeautifulSoup.BeautifulStoneSoup(data)
             items = soup.findAll('item')
-            isNew = False
 
             for item in items:
                 title = str(item.find("title").string)
                 author = str(item.find("author").string)
                 content = str(item.find("description").string)
 
-                id = hashlib.md5(str(title)).hexdigest()
-
-                if not id in self.app.pages[str(pageID)]['comments']:
-                    isNew = True
-
+                id = hashlib.md5(str(title)+author).hexdigest()
                 localAvatar = self.downloadAvatar(author, fromHTML=True)
-                self.app.pages[str(pageID)]['title'] = title
-                self.app.pages[str(pageID)]['comments'][id] = {'avatar': localAvatar}
-                self.app.pages[str(pageID)]['comments'][id]['username'] = author
-                self.app.pages[str(pageID)]['comments'][id]['content'] = content
 
-                if isNew == True:
+                if self.app.Notifications.exists(id) == False:
                     self.app.addCommentToDB(pageID, id, localAvatar)
                     self.app.notifyNew(pageID, id, "%username% utworzył wpis \"%title%\"")
-                    isNew = False
+                    self.app.Notifications.add('dp_'+pageID, '"'+author+'" utworzył wpis "'+title+'"', content, '', localAvatar, pageID, sid=id)
                 
 
             return True
@@ -122,7 +113,7 @@ class PluginMain(libnbnotify.Plugin):
             soup = BeautifulSoup.BeautifulSoup(data)
 
 			# the title is too long, so we cut it a little bit
-            self.app.pages[pageID]['title'] = str(soup.html.head.title.string).replace("- blogi użytkowników portalu dobreprogramy", "")
+            title = str(soup.html.head.title.string).replace("- blogi użytkowników portalu dobreprogramy", "")
             commentsHTML = soup.findAll('div', {'class': "odd item"})
             commentsEven = soup.findAll('div', {'class': "even item"})
             commentsHTML = commentsHTML+commentsEven
@@ -132,17 +123,23 @@ class PluginMain(libnbnotify.Plugin):
 
             commentsHTML.reverse()
 
+            i = 0
+
             for comment in commentsHTML:
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent and self.app.Notifications.maxMessagesPerEvent > 0:
+                    break
+
                 # comment id - first <img src="(.*)"
                 cSoup = BeautifulSoup.BeautifulSoup(str(comment))
-                id = str(cSoup.div['id'])
+                id = hashlib.md5('dp'+str(cSoup.div['id'])).hexdigest()
 
-                if not id in self.app.pages[str(pageID)]['comments']:
+                if self.app.Notifications.exists(id) == False:
                     isNew = True
 
                 avatar = str(cSoup.img['src'])
                 localAvatar = self.downloadAvatar(avatar)
-                self.app.pages[str(pageID)]['comments'][id] = {'avatar': localAvatar}
 
                 # user name - <a class="color-inverse"
                 cInv = cSoup.findAll("a", {'class': 'color-inverse'})
@@ -151,19 +148,17 @@ class PluginMain(libnbnotify.Plugin):
                 if len(cInv) == 0: 
                     cInv = cSoup.findAll("span")
                     nSoup = BeautifulSoup.BeautifulSoup(str(cInv[0]))
-                    self.app.pages[str(pageID)]['comments'][id]['username'] = str(nSoup.span.string)
+                    userName = str(nSoup.span.string)
 
                 else:
                     nSoup = BeautifulSoup.BeautifulSoup(str(cInv[0]))
-                    self.app.pages[str(pageID)]['comments'][id]['username'] = str(nSoup.a.string)
+                    userName = str(nSoup.a.string)
 
                 # comment content - <div class="text-h75 tresc"
                 nSoup = str(cSoup.findAll("div", {'class': "text-h75 tresc"})[0]).replace('<div class="text-h75 tresc">', '').replace('</div>', '')
-                self.app.pages[str(pageID)]['comments'][id]['content'] = nSoup
-                title = self.app.pages[str(pageID)]['comments'][id]['username']+ " skomentował wpis \""+self.app.pages[pageID]['title']+"\""
+                content = nSoup
+                title = userName+ " skomentował wpis \""+title+"\""
 
                 if isNew == True:
-                    #self.app.notifyNew(pageID, id, "%username% skomentował wpis \"%title%\"")
-                    self.app.Notifications.add('dp_'+pageID, title, self.app.pages[str(pageID)]['comments'][id]['content'], '', localAvatar, pageID)
-                    self.app.addCommentToDB(pageID, id, localAvatar)
+                    self.app.Notifications.add('dp_'+pageID, title, content, '', localAvatar, pageID, sid=id)
                     isNew = False

@@ -5,7 +5,7 @@
                 <platform>FreeBSD</platform>
 	</platforms>
 
-	<version>0.8.1</version>
+	<version>0.8.2</version>
 	<mirrors>
 		<mirror>git://github.com/webnull/nbnotify.git</mirror>
 	</mirrors>

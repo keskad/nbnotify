@@ -109,8 +109,13 @@ class PluginMain(libnbnotify.Plugin):
             elements = soup.findAll('li', {'class': 'infos_box clearfix'})
 
             elements.reverse()
+            i = 0
 
             for element in elements:
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent and self.app.Notifications.maxMessagesPerEvent > 0:
+                    break
 
                 # i dont know its working
                 if '<a href="/pro">PRO!' in str(element) or "showHideNotificationDiv" in str(element):
@@ -132,12 +137,8 @@ class PluginMain(libnbnotify.Plugin):
 
                 id = hashlib.md5(str(content)).hexdigest()
 
-                if not id in self.app.pages[str(pageID)]['comments']:
-                    self.app.pages[str(pageID)]['title'] = title
-                    self.app.pages[str(pageID)]['comments'][id] = {'username': str(profile), 'content': str(content), 'title': str(title), 'avatar': str(avatar)}
-                    self.app.addCommentToDB(pageID, id, str(avatar))
-                    #self.app.notifyNewData(str(content), "Blog "+login, avatar)
-                    self.app.Notifications.add('fbl_'+str(login), title, content, '', avatar, pageID)
+                if self.app.Notifications.exists(id) == False:
+                    self.app.Notifications.add('fbl_'+str(login), title, content, '', avatar, pageID, sid=id)
 
             
             

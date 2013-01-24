@@ -59,7 +59,14 @@ class PluginMain(libnbnotify.Plugin):
 
             timeline.reverse()
 
+            i = 0
+
             for event in timeline:
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent and self.app.Notifications.maxMessagesPerEvent > 0:
+                    break
+
                 title = str(event.user.name) + " @"+str(event.user.screen_name)+" ("+str(event.created_at)+")"
                 avatar = self.getAvatar(str(event.user.profile_image_url))
                 content = str(event.text)
@@ -67,11 +74,8 @@ class PluginMain(libnbnotify.Plugin):
 
                 id = hashlib.md5(tweetid).hexdigest()
 
-                if not id in self.app.pages[str(pageID)]['comments']:
-                    self.app.pages[str(pageID)]['comments'][id] = {'avatar': avatar, 'username': title, 'content': content}
-                    #self.app.notifyNewData(content, title, avatar, pageID='')
-                    self.app.addCommentToDB(pageID, id, avatar)
-                    self.app.Notifications.add('twitter', title, content, '', avatar, pageID='')
+                if self.app.Notifications.exists(id) == False:
+                    self.app.Notifications.add('twitter', title, content, '', avatar, pageID='', sid=id)
 
 
 

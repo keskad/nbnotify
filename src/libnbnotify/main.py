@@ -374,11 +374,11 @@ class nbnotify:
             return False
 
 
-    def addCommentToDB(self, pageID, id, localAvatar):
-        try:
-            self.db.cursor.execute("INSERT INTO `comments` (page_id, comment_id, content, username, avatar) VALUES (?, ?, ?, ?, ?)", (str(pageID), str(id), str(self.pages[str(pageID)]['comments'][id]['content']), str(self.pages[str(pageID)]['comments'][id]['username']), str(localAvatar)))
-        except sqlite3.IntegrityError:
-            pass # sqlite3.IntegrityError: column comment_id is not unique
+    #def addCommentToDB(self, pageID, id, localAvatar):
+    #    try:
+    #        self.db.cursor.execute("INSERT INTO `nb_notifications` (sid, comment_id, content, username, avatar) VALUES (?, ?, ?, ?, ?)", (str(pageID), str(id), str(self.pages[str(pageID)]['comments'][id]['content']), str(self.pages[str(pageID)]['comments'][id]['username']), str(localAvatar)))
+    #    except sqlite3.IntegrityError:
+    #        pass # sqlite3.IntegrityError: column comment_id is not unique
 
 
     def notifyNew(self, pageID, id, template="%username% skomentował \"%title%\""):
@@ -433,22 +433,23 @@ class nbnotify:
 
         return True
 
-    def loadCommentsFromDB(self):
-        query = self.db.query("SELECT * FROM `comments`")
+    # moved to Notifications class
+    #def loadCommentsFromDB(self):
+    #    query = self.db.query("SELECT * FROM `comments`")
 
-        results = query.fetchall()
+    #    results = query.fetchall()
 
-        for result in results:
-            try:
-                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])] = dict()
-                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['username'] = str(result['username'])
-                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['content'] = str(result['content'])
-                self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['avatar'] = str(result['avatar'])
-            except KeyError:
+    #    for result in results:
+    #        try:
+    #            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])] = dict()
+    #            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['username'] = str(result['username'])
+    #            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['content'] = str(result['content'])
+    #            self.pages[str(result['page_id'])]['comments'][str(result['comment_id'])]['avatar'] = str(result['avatar'])
+    #        except KeyError:
                 # delete comments that dont belongs to any page
-                self.db.query("DELETE FROM `comments` WHERE `comment_id`='"+str(result['comment_id'])+"'")
+    #            self.db.query("DELETE FROM `comments` WHERE `comment_id`='"+str(result['comment_id'])+"'")
 
-        self.Logging.output("+ Loaded "+str(len(results))+" comments from cache.", "", True)
+    #    self.Logging.output("+ Loaded "+str(len(results))+" comments from cache.", "", True)
 
     def checkPage(self, pageID):
         """ Check if page was modified """
@@ -511,7 +512,7 @@ class nbnotify:
         """ Load comments and pages from configuration and database """
 
         self.addPagesFromConfig()
-        self.loadCommentsFromDB()
+        self.Logging.output("+ Loaded "+str(self.Notifications.cacheLoad())+" notifications from cache", "debug", False)
         return True
 
     def main(self):

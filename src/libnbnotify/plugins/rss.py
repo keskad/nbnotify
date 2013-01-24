@@ -5,6 +5,7 @@ import hashlib
 import os
 import httplib
 import urlparse
+#import time
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Provides simple RSS handler'}
 
@@ -100,8 +101,15 @@ class PluginMain(libnbnotify.Plugin):
                 localAvatar = a
 
             items.reverse()
+            i = 0
 
             for item in items:
+                i = i + 1
+
+                if i > self.app.Notifications.maxMessagesPerEvent and self.app.Notifications.maxMessagesPerEvent > 0:
+                    break
+
+
                 title = item.find("title").string
                 content = item.find("description").string
 
@@ -115,11 +123,12 @@ class PluginMain(libnbnotify.Plugin):
                         localAvatar = ""
                         pass
 
-                id = hashlib.md5(title).hexdigest()
+                sid = hashlib.md5('rss'+pageID+title).hexdigest()
+                #date = int(time.time())
 
-                if not id in self.app.pages[str(pageID)]['comments']:
-                    self.app.pages[str(pageID)]['title'] = title
-                    self.app.pages[str(pageID)]['comments'][id] = {'username': domain, 'content': content, 'title': title, 'avatar': localAvatar}
-                    self.app.addCommentToDB(pageID, id, localAvatar)
-                    #self.app.notifyNew(pageID, id, "\"%title%\"")
-                    self.app.Notifications.add('rss_'+pageID, title, content, '', localAvatar, pageID)
+                if self.app.Notifications.exists(sid) == False:
+                    self.app.Notifications.add('rss_'+pageID, title, content, '', localAvatar, pageID, sid=sid)
+
+
+
+

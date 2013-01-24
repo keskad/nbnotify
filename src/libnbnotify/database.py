@@ -40,11 +40,27 @@ class Database:
 
         if newDB == True:
             self.createEmptyDB()
+        else:
+            try:
+                sql = self.cursor.execute("SELECT `value` FROM `nb_meta` WHERE `key`='db_version';")
+            except sqlite3.OperationalError:
+                os.remove(self.dbPath)
+                self.__init__()
+            
 
     def query(self, query):
         return self.cursor.execute(query)
 
     def createEmptyDB(self):
         print("Creating new database...")
-        self.cursor.execute("CREATE TABLE `comments` (comment_id varchar(80) primary key, page_id int(20), content text, username varchar(64), avatar varchar(128));")
+        self.cursor.execute("CREATE TABLE `nb_meta` (key varchar(64) primary key, value varchar(1024));")
+        self.cursor.execute("INSERT INTO `nb_meta` (key, value) VALUES ('db_version', '2');")
+
+        # sid = unique id based on md5 sum of notification content, date and pageID
+        self.cursor.execute("CREATE TABLE `nb_notifications` (sid varchar(80) primary key, date varchar(40), title varchar(120), content varchar(1024), icon varchar(1024), pageID int(20));")
         self.socket.commit()
+
+
+
+
+

@@ -14,13 +14,62 @@ class Notifications:
     _queue = dict()
     _m = False
     maxMessagesPerEvent = 3
+    cached = list()
+
     app = None
+
+    def cacheLoad(self):
+        """ Load notifications cache """
+
+        results = self.app.db.query("SELECT `sid`,`content` FROM `nb_notifications`;").fetchall()
+
+        for i in results:
+            #print("Appending "+i['content'])
+            self.cached.append(i['sid'])
+
+        return len(results)
+
+    # check if already exists in cache
+    def exists(self, sid):
+        """ Check if Notification already exists in database """
+
+        #sid = self.getSid(title, content, pageID, salt)
+
+        if sid in self.cached:
+            return True
+
+        return False
+
+    #def getSid(self, title, content, pageID, salt=''):
+    #    return hashlib.md5(str(salt) + str(content) + str(pageID) + str(title)).hexdigest()
+
+
+    ### Cache support
+    def _cacheAdd(self, item):
+        """ Add to cache """
+
+        #if not "salt" in item:
+        #    item['salt'] = ''
+
+        #sid = self.getSid(item['title'], item['content'], item['pageID'], item['salt'])
+
+        if item['sid'] == '':
+            return False
+
+        if item['sid'] in self.cached:
+            return False
+
+        #print("Adding to cache "+item['content'])
+
+        self.cached.append(item['sid'])
+        self.app.db.cursor.execute("INSERT INTO `nb_notifications` (sid, date, title, content, icon, pageID) VALUES (?, ?, ?, ?, ?, ?);", (item['sid'], item['date'], item['title'], item['content'], item['icon'], str(item['pageID'])))
+
 
     def __init__(self, app):
         self.app = app
 
         try:
-            self.maxMessagesPerEvent = int(self.app.Config.getKey("global", "notifications_per_event"))
+            self.maxMessagesPerEvent = int(self.app.Config.getKey("global", "notifications_per_event", 3))
         except ValueError:
             self.maxMessagesPerEvent = 3
 
@@ -29,7 +78,7 @@ class Notifications:
 
         self.app.Logging.output("Notification messages per event is "+str(self.maxMessagesPerEvent)+" (global->notifications_per_event)", "debug", False)
 
-    def add(self, eventName, title, content, date, icon='', pageID=''):
+    def add(self, eventName, title, content, date, icon='', pageID='', sid='', testMode=False):
         """ Add new message to queue """
 
         self._m = True
@@ -40,8 +89,14 @@ class Notifications:
         if not eventName in self._queue:
             self._queue[eventName] = list()
 
+        item = {'date': date, 'title': title, 'content': content, 'icon': icon, 'pageID': pageID, 'sid': sid}
+
         # add to queue
-        self._queue[eventName].append({'date': date, 'title': title, 'content': content, 'icon': icon, 'pageID': pageID})
+        self._queue[eventName].append(item)
+
+        # testMode is a good option for debugging notifications
+        if testMode == False:
+            self._cacheAdd(item)
 
         # remove first element from queue if its already full
         if len(self._queue[eventName]) > self.maxMessagesPerEvent:
@@ -88,7 +143,7 @@ class Logging:
         self.initializeLogger()
 
     def convertMessage(self, message, stackPosition):
-        return strftime("%d/%m/%Y %H:%M:%S", localtime())+", "+stackPosition+": "+message
+        return strftime("%d/%m/%Y %H:%M:%S", localtime())+" "+stackPosition+": "+message
 
     def initializeLogger(self):
         try:
