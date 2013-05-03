@@ -20,6 +20,9 @@ Requires:
 Watches blog entries on dobreprogramy.pl and sends notifications when a new comment will appear.
 
 Changelog:
+04.05.2013 (v.0.8.2.1) <webnull.www@gmail.com>:
+    * Moved to SimpleHTTPServer (for future SSL implmentation etc.)
+
 24.01.2013 (v.0.8.2) <webnull.www@gmail.com>:
     * Notifications cache database was rebuilded
     * Optimized plugins code (now requires less CPU time)

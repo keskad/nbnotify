@@ -1,18 +1,28 @@
 #-*- coding: utf-8 -*-
 import libnbnotify
 import socket
+import ssl
 import json
 import asyncore
 import re
 import sys
 from threading import Thread
+import string
+import random
+import os
+import BaseHTTPServer, SimpleHTTPServer
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Remote control throught sockets'}
+app = ""
 
-class SocketInterface(asyncore.dispatcher_with_send):
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
+
+class SocketInterface(SimpleHTTPServer.SimpleHTTPRequestHandler):
     """ Very simple socket interface """
 
-    app = None
+    def log_message(self, format, *args):
+        return False
 
     def ping(self, data=''):
         return "pong";
@@ -129,118 +139,83 @@ class SocketInterface(asyncore.dispatcher_with_send):
         return self.app.togglePlugin(Plugin, 'deactivate')
 
 
-    def __init__(self, socket, app, addr):
-        asyncore.dispatcher_with_send.__init__(self)
-        self.set_socket(socket)
+    def do_POST(self):
+        contentLen = int(self.headers.getheader('content-length'))
+        postBody = self.rfile.read(contentLen)
+
+        # response
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(self.handle_read(postBody))
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write("Hello world.")
+
+    def handle_read(self, data):
+        global app
+
         self.app = app
-        self.addr = addr
-
-    def httpResponse(self, data):
-        return """HTTP/1.1 200 OK
-Content-Type: text/xml;charset=utf-8
-Content-Length: """+str(len(data))+"""
-
-"""+data
-
-    def httpRequestParser(self, data):
-        if data[0:4] == "POST":
-            t = re.findall(r"POST ([0-9A-Za-z\?\#\@$\%\!\.\,\:\;\'\|\-\+\/]+) ", data)
-
-            if len(t) == 0:
-                return "Invalid POST request", False
-
-            page = t[0]
-        else:
-            return "Not a POST request", False
-
-
-        # headers
-        t = re.findall(r"(?P<name>.*?): (?P<value>.*?)\r\n", data)
-
-        headers = dict()
-
-        for header in t:
-            headers[header[0]] = header[1]
-
-        t = str(data).split('\r\n')
-        content = False
-
-        for line in t:
-            if line[0:1] == "{":
-                content = line
-                break
-        
-        return page, content
-
-        self.app.Logging.output("Socket::HTTP:GET "+str(page), "debug", False)
-
-    def handle_read(self):
-        data = self.recv(8192)
 
         if data:
             if data == "ping":
-                self.send("pong")
-                return False
+                return "pong"
 
             try:
-                t, jsonData = self.httpRequestParser(data)
+                #if t == False:
+                #    return "Error: Cannot parse HTTP request, "+str(t)+", "+str(jsonData)
 
-                if t == False:
-                    self.send(self.httpResponse("Error: Cannot parse HTTP request, "+str(t)+", "+str(jsonData)))
-                    return False
+                if data == False:
+                    return "Error: Cannot parse HTTP request, empty request, "+str(jsonData)
 
-                if jsonData == False:
-                    self.send(self.httpResponse("Error: Cannot parse HTTP request, empty request, "+str(t)+", "+str(jsonData)))
-                    return False
-
-                text = json.loads(jsonData)
+                text = json.loads(data)
 
                 if text['function'] == "handle_read" or text['function'] == "__init__" or text['function'] == "httpRequestParser":
-                    self.send(self.httpResponse("Error: Function not avaliable"))
-                    return False
+                    return "Error: Function not avaliable"
 
                 if hasattr(self, text['function']):
                     exec("r = str(self."+text['function']+"(text['data']))")
                 else:
                     r = "Error: Function not found"
 
-                self.app.Logging.output("Socket::GET="+str(text['function'])+"&addr="+str(self.addr), "debug", False)
+                self.app.Logging.output("Socket::GET="+str(text['function'])+"&addr="+str(self.client_address[0]), "debug", False)
 
                 # send response                
-                self.send(self.httpResponse(json.dumps({'response': r})))
+                return json.dumps({'response': r})
 
             except Exception as e:
                 self.app.Logging.output("SubgetSocketInterface: Cannot parse json data, is the client bugged? "+str(e), "warning", True)
-                self.send(self.httpResponse("Error: "+str(e)))
+                return "Error: "+str(e)
 
-class SocketServer(asyncore.dispatcher):
+class SocketServer:
     """ Very simple connections listener """
 
-    app = None
+    host = "127.0.0.1"
+    port = 9954
 
-    def __init__(self, host, port, app):
-        self.app = app
-        asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM) # IPv6 support will be implemented later
-        self.set_reuse_addr()
-        self.bind((host, port))
-        self.listen(3)
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
 
-    def handle_accept(self):
-        pair = self.accept()
+    def serve(self):
+        httpd = BaseHTTPServer.HTTPServer((self.host, self.port), SocketInterface)
+        httpd.serve_forever()
 
-        if pair is None:
-            pass
-        else:
-            sock, addr = pair
-            handler = SocketInterface(sock, self.app, addr)
 
 class PluginMain(libnbnotify.Plugin):
     name = "bus"
     host = "127.0.0.1"
     port = 9954
+    bus = ""
 
     def _pluginInit(self):
+        #self.initSSL()
+        global app
+        app = self.app
+        
         self.host = str(self.app.Config.getKey("bus_socket", "host", "127.0.0.1"))
 
         if self.app.Config.getKey("bus_socket", "port") == False:
@@ -258,12 +233,27 @@ class PluginMain(libnbnotify.Plugin):
             return True
         else:
             return False
+            
+    #def initSSL(self):
+    #   path = os.path.expanduser("~/.nbnotify/ssl")
+       
+       # create ssl directory
+    #   if not os.path.isdir(path):
+    #      os.mkdir(path)
+        
+    #   if not os.path.isfile(path+"/private.pem"):
+    #       passwd = id_generator(size=32)
+           
+    #       self.app.Logging.output("Cannot find SSL cert, creating new one...", "debug", True)
+    #       os.system("openssl genrsa -out "+path+"/private.pem 1024")
+    #       os.system("openssl rsa -in "+path+"/private.pem -pubout > "+path+"/public.pem")
+
 
     def startServer(self):
         try:
             self.app.Logging.output("Socket server is running on "+str(self.host)+":"+str(self.port), "debug", False)
-            self.bus = SocketServer(self.host, self.port, self.app)
-            self.thread = Thread(target=asyncore.loop)
+            self.bus = SocketServer(self.host, self.port)
+            self.thread = Thread(target=self.bus.serve)
             self.thread.setDaemon(True)
             self.thread.start()
         except Exception as e:
