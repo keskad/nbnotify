@@ -132,14 +132,14 @@ class PluginMain(libnbnotify.Plugin):
                             if "/n/?photo.php" in k['href']:
                                 continue
 
-                            if "/n/?pages/" in k['href']: # /n/?pages/I-hate-like-share-or-comment-spam-on-fb/
+                            if "/n/?pages/" in k['href']:
                                 test = re.findall("n\/\?pages\/([A-Za-z0-9\-\_]+)\/([0-9]+)", k['href'])
 
                                 if len(test) > 0:
                                     localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0][1]+"/picture", imgType="jpg", cacheLifeTime=172800)
                                 break
 
-                            if "http://www.facebook.com/n/?" in k['href']:
+                            if "https://www.facebook.com/n/?" in k['href']:
                                 test = re.findall("n/\?([A-Za-z0-9\.\_\-]+)&", k['href'])
 
                                 if test[0] == 'profile.php':
