@@ -100,8 +100,7 @@ class PluginMain(libnbnotify.Plugin):
                     break
 
                 content = item.find("description").string
-                content = content.replace('&lt;', '<')
-                content = content.replace('&gt;', '>')
+                content = content.replace('&lt;', '<').replace('&gt;', '>')
 
                 # try to get any image from content to display as notification icon
                 if "<img src" in content:
