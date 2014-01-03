@@ -12,7 +12,8 @@ class PluginMain(libnbnotify.Plugin):
         api = ""
 
         def _pluginInit(self):
-            self.api = twitter.Api()
+            # You should create your own application on dev.twitter. Example link to user http://twitter.com/25403689 (riseagainst)
+            self.api = twitter.Api(consumer_key='', consumer_secret='', access_token_key='', access_token_secret='')
             self.app.Hooking.connectHook("onAddPage", self.addPage)
             return True
 
@@ -56,8 +57,6 @@ class PluginMain(libnbnotify.Plugin):
             except Exception:
                 self.app.removePage(pageID)
                 return False
-
-            timeline.reverse()
 
             i = 0
 
