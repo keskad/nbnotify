@@ -57,6 +57,8 @@ class PluginMain(libnbnotify.Plugin):
             except Exception:
                 self.app.removePage(pageID)
                 return False
+            
+            # timeline.reverse()
 
             i = 0
 
