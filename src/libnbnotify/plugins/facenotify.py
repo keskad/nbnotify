@@ -8,7 +8,6 @@ import urllib
 import urlparse
 import re
 import json
-import dryscrape
 #import time
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Facebook notifications'}
