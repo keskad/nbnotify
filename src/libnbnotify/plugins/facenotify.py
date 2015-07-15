@@ -8,6 +8,7 @@ import urllib
 import urlparse
 import re
 import json
+import dryscrape
 #import time
 
 PluginInfo = {'Requirements' : { 'OS' : 'All'}, 'API': 2, 'Authors': 'webnull', 'domain': '', 'type': 'extension', 'isPlugin': False, 'Description': 'Facebook notifications'}
@@ -136,7 +137,7 @@ class PluginMain(libnbnotify.Plugin):
                                 test = re.findall("n\/\?pages\/([A-Za-z0-9\-\_]+)\/([0-9]+)", k['href'])
 
                                 if len(test) > 0:
-                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0][1]+"/picture", imgType="jpg", cacheLifeTime=172800)
+                                    localAvatar = self.getAvatar("http://facebook.com/"+test[0][1]+"/picture", imgType="jpg", cacheLifeTime=172800)
                                 break
 
                             if "https://www.facebook.com/n/?" in k['href']:
@@ -146,8 +147,9 @@ class PluginMain(libnbnotify.Plugin):
                                     test = re.findall("id=([0-9]+)", k['href'])
 
                                 if len(test) > 0:
-                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+test[0]+"/picture", imgType="jpg", cacheLifeTime=86400)
-
+                                    facebookProfile = self.app.httpGET("www.facebook.com", "/"+test[0])
+                                    facebookId = re.findall("\",\"entity_id\"\:\"(.*?)\"}]],\[", facebookProfile)
+                                    localAvatar = self.getAvatar("http://graph.facebook.com/"+facebookId[0]+"/picture", imgType="jpg", cacheLifeTime=86400)
                                 break
 
 
@@ -161,7 +163,7 @@ class PluginMain(libnbnotify.Plugin):
                 # exists(self, title, content, pageID, salt=''):
                 # add(self, eventName, title, content, date, icon='', pageID='', salt='', testMode=False):
 
-                sid = hashlib.md5(title).hexdigest()
+                sid = hashlib.md5(title.encode('ascii', 'ignore')).hexdigest()
 
                 if self.app.Notifications.exists(sid) == False:
                     self.app.Notifications.add('facenotify', 'Facebook', content, '', icon=localAvatar, pageID=pageID, sid=sid)
